@@ -1,0 +1,87 @@
+// BookPage Types
+
+export type DateStatus = 'open' | 'hold' | 'booked';
+
+export interface Property {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  location: string;
+  pricePerNight: number;
+  currency: string;
+  whatsappNumber: string;
+  images: string[];
+  video?: string;
+  roomTypes?: RoomType[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RoomType {
+  id: string;
+  name: string;
+  description: string;
+  pricePerNight: number;
+  maxGuests: number;
+}
+
+export interface DateEntry {
+  date: string; // YYYY-MM-DD format
+  status: DateStatus;
+  propertyId: string;
+  roomTypeId?: string;
+}
+
+export interface BookingCalendar {
+  propertyId: string;
+  dates: Record<string, DateStatus>; // key: YYYY-MM-DD, value: status
+}
+
+export interface AdminUser {
+  password: string;
+  isAuthenticated: boolean;
+}
+
+export interface BookingRequest {
+  checkIn: string;
+  checkOut: string;
+  guests: number;
+  roomType?: string;
+  propertyName: string;
+  pricePerNight: number;
+}
+
+// Demo data
+export const DEMO_PROPERTIES: Property[] = [
+  {
+    id: '1',
+    slug: 'villa-moonlight',
+    name: 'Villa Moonlight',
+    description: 'A serene hillside retreat with panoramic ocean views, private pool, and modern amenities. Perfect for couples seeking tranquility.',
+    location: 'Goa, India',
+    pricePerNight: 4500,
+    currency: '₹',
+    whatsappNumber: '919876543210',
+    images: [],
+    roomTypes: [
+      { id: 'r1', name: 'Deluxe Suite', description: 'King bed, ocean view, private balcony', pricePerNight: 4500, maxGuests: 2 },
+      { id: 'r2', name: 'Garden Room', description: 'Queen bed, garden access', pricePerNight: 3500, maxGuests: 2 },
+    ],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    slug: 'treehouse-retreat',
+    name: 'Treehouse Retreat',
+    description: 'Elevated living among the canopy. Wake up to birdsong and misty mountain views in this eco-friendly sanctuary.',
+    location: 'Kerala, India',
+    pricePerNight: 3200,
+    currency: '₹',
+    whatsappNumber: '919876543210',
+    images: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
