@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Calendar, 
-  MapPin, 
-  IndianRupee, 
-  MessageCircle, 
-  ChevronLeft, 
+import {
+  Calendar,
+  MapPin,
+  IndianRupee,
+  MessageCircle,
+  ChevronLeft,
   ChevronRight,
   BedDouble,
   X,
   Share2,
-  ArrowLeft
+  ArrowLeft,
+  Instagram,
+  Video
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -37,6 +39,13 @@ export default function PropertyPage() {
   const galleryRef = useRef<HTMLDivElement>(null);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
+
+  const mediaList = property
+    ? [
+      ...(property.images || []).map(url => ({ type: 'image', url })),
+      ...(property.videos || []).map(url => ({ type: 'video', url }))
+    ]
+    : [];
 
   useEffect(() => {
     if (slug) {
@@ -81,24 +90,24 @@ export default function PropertyPage() {
   };
 
   const handleTouchEnd = () => {
-    if (!property || property.images.length <= 1) return;
+    if (!property || mediaList.length <= 1) return;
     const diff = touchStart - touchEnd;
     const threshold = 50;
     if (diff > threshold) {
-      setCurrentImageIndex((prev) => (prev + 1) % property.images.length);
+      setCurrentImageIndex((prev) => (prev + 1) % mediaList.length);
     } else if (diff < -threshold) {
-      setCurrentImageIndex((prev) => (prev - 1 + property.images.length) % property.images.length);
+      setCurrentImageIndex((prev) => (prev - 1 + mediaList.length) % mediaList.length);
     }
   };
 
   const nextImage = () => {
     if (!property) return;
-    setCurrentImageIndex((prev) => (prev + 1) % property.images.length);
+    setCurrentImageIndex((prev) => (prev + 1) % mediaList.length);
   };
 
   const prevImage = () => {
     if (!property) return;
-    setCurrentImageIndex((prev) => (prev - 1 + property.images.length) % property.images.length);
+    setCurrentImageIndex((prev) => (prev - 1 + mediaList.length) % mediaList.length);
   };
 
   const handleDateClick = (day: number) => {
@@ -119,10 +128,10 @@ export default function PropertyPage() {
   const generateWhatsAppLink = () => {
     if (!property || !selectedDates.checkIn) return '#';
     const checkInStr = format(selectedDates.checkIn, 'MMM d, yyyy');
-    const checkOutStr = selectedDates.checkOut 
+    const checkOutStr = selectedDates.checkOut
       ? format(selectedDates.checkOut, 'MMM d, yyyy')
       : 'next day';
-    const nights = selectedDates.checkOut 
+    const nights = selectedDates.checkOut
       ? Math.ceil((selectedDates.checkOut.getTime() - selectedDates.checkIn.getTime()) / (1000 * 60 * 60 * 24))
       : 1;
     const message = `Hi! I want to book ${property.name} for ${checkInStr} to ${checkOutStr} (${nights} night${nights > 1 ? 's' : ''}), ${guests} guest${guests > 1 ? 's' : ''}. Your page shows ${property.currency}${property.pricePerNight.toLocaleString()}/night. Is this still available?`;
@@ -201,7 +210,7 @@ export default function PropertyPage() {
     <div className="min-h-screen bg-white">
       {/* Mobile */}
       <div className="lg:hidden">
-        <div 
+        <div
           ref={galleryRef}
           className="relative h-screen bg-black"
           onTouchStart={handleTouchStart}
@@ -209,8 +218,8 @@ export default function PropertyPage() {
           onTouchEnd={handleTouchEnd}
         >
           <div className="absolute top-4 left-4 right-4 z-20 flex gap-1">
-            {property.images.length > 0 ? (
-              property.images.map((_, index) => (
+            {mediaList.length > 0 ? (
+              mediaList.map((_, index) => (
                 <div key={index} className={`flex-1 h-1 rounded-full transition-all ${index <= currentImageIndex ? 'bg-white' : 'bg-white/30'}`} />
               ))
             ) : (
@@ -230,19 +239,23 @@ export default function PropertyPage() {
           </div>
 
           <div className="h-full flex items-center justify-center">
-            {property.images.length > 0 ? (
-              <img src={property.images[currentImageIndex]} alt={property.name} className="w-full h-full object-cover" onClick={() => setShowImageModal(true)} />
+            {mediaList.length > 0 ? (
+              mediaList[currentImageIndex].type === 'video' ? (
+                <video src={mediaList[currentImageIndex].url} autoPlay loop muted playsInline className="w-full h-full object-cover" onClick={() => setShowImageModal(true)} />
+              ) : (
+                <img src={mediaList[currentImageIndex].url} alt={property.name} className="w-full h-full object-cover" onClick={() => setShowImageModal(true)} />
+              )
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
                 <div className="text-center text-white">
                   <BedDouble className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg opacity-80">No photos yet</p>
+                  <p className="text-lg opacity-80">No media yet</p>
                 </div>
               </div>
             )}
           </div>
 
-          {property.images.length > 1 && (
+          {mediaList.length > 1 && (
             <>
               <button onClick={prevImage} className="absolute left-0 top-1/2 -translate-y-1/2 w-16 h-32 flex items-center justify-center">
                 <ChevronLeft className="w-8 h-8 text-white/70" />
@@ -255,9 +268,14 @@ export default function PropertyPage() {
 
           <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
             <h1 className="text-2xl font-bold text-white mb-2">{property.name}</h1>
-            <div className="flex items-center gap-4 text-white/80 text-sm">
+            <div className="flex items-center gap-4 text-white/80 text-sm flex-wrap">
               <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{property.location}</span>
               <span className="flex items-center gap-1"><IndianRupee className="w-4 h-4" />{property.pricePerNight.toLocaleString()}/night</span>
+              {property.instagram && (
+                <a href={`https://instagram.com/${property.instagram}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-white transition-colors">
+                  <Instagram className="w-4 h-4" />@{property.instagram}
+                </a>
+              )}
             </div>
             <p className="text-white/70 text-sm mt-3 line-clamp-2">{property.description}</p>
           </div>
@@ -319,7 +337,7 @@ export default function PropertyPage() {
                 <div>
                   <p className="text-sm text-gray-500">Selected Dates</p>
                   <p className="font-medium text-gray-900">
-                    {format(selectedDates.checkIn, 'MMM d')} 
+                    {format(selectedDates.checkIn, 'MMM d')}
                     {selectedDates.checkOut && ` - ${format(selectedDates.checkOut, 'MMM d')}`}
                     {nights > 0 && ` (${nights} nights)`}
                   </p>
@@ -377,14 +395,18 @@ export default function PropertyPage() {
           <div className="grid lg:grid-cols-2 gap-8">
             <div>
               <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-gray-100">
-                {property.images.length > 0 ? (
-                  <img src={property.images[currentImageIndex]} alt={property.name} className="w-full h-full object-cover" />
+                {mediaList.length > 0 ? (
+                  mediaList[currentImageIndex].type === 'video' ? (
+                    <video src={mediaList[currentImageIndex].url} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                  ) : (
+                    <img src={mediaList[currentImageIndex].url} alt={property.name} className="w-full h-full object-cover" />
+                  )
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center">
                     <BedDouble className="w-24 h-24 text-white/50" />
                   </div>
                 )}
-                {property.images.length > 1 && (
+                {mediaList.length > 1 && (
                   <>
                     <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow-lg hover:bg-white transition-colors">
                       <ChevronLeft className="w-5 h-5" />
@@ -395,14 +417,23 @@ export default function PropertyPage() {
                   </>
                 )}
                 <div className="absolute bottom-4 right-4 bg-black/60 text-white text-sm px-3 py-1 rounded-full">
-                  {currentImageIndex + 1} / {property.images.length || 1}
+                  {currentImageIndex + 1} / {mediaList.length || 1}
                 </div>
               </div>
-              {property.images.length > 1 && (
+              {mediaList.length > 1 && (
                 <div className="flex gap-2 mt-4 overflow-x-auto pb-2">
-                  {property.images.map((image, index) => (
-                    <button key={index} onClick={() => setCurrentImageIndex(index)} className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden ${index === currentImageIndex ? 'ring-2 ring-emerald-500' : ''}`}>
-                      <img src={image} alt="" className="w-full h-full object-cover" />
+                  {mediaList.map((media, index) => (
+                    <button key={index} onClick={() => setCurrentImageIndex(index)} className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden ${index === currentImageIndex ? 'ring-2 ring-emerald-500' : ''}`}>
+                      {media.type === 'video' ? (
+                        <>
+                          <video src={media.url} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                            <Video className="w-6 h-6 text-white" />
+                          </div>
+                        </>
+                      ) : (
+                        <img src={media.url} alt="" className="w-full h-full object-cover" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -412,8 +443,13 @@ export default function PropertyPage() {
             <div>
               <div className="mb-6">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">{property.name}</h1>
-                <div className="flex items-center gap-4 text-gray-600">
+                <div className="flex items-center gap-4 text-gray-600 flex-wrap">
                   <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{property.location}</span>
+                  {property.instagram && (
+                    <a href={`https://instagram.com/${property.instagram}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-emerald-600 transition-colors">
+                      <Instagram className="w-4 h-4" />@{property.instagram}
+                    </a>
+                  )}
                 </div>
               </div>
               <div className="flex items-baseline gap-2 mb-6">
@@ -478,7 +514,7 @@ export default function PropertyPage() {
                     <div>
                       <p className="text-sm text-gray-500">Selected Dates</p>
                       <p className="font-medium text-gray-900">
-                        {format(selectedDates.checkIn, 'MMM d')} 
+                        {format(selectedDates.checkIn, 'MMM d')}
                         {selectedDates.checkOut && ` - ${format(selectedDates.checkOut, 'MMM d')}`}
                         {nights > 0 && ` (${nights} nights)`}
                       </p>
@@ -564,10 +600,14 @@ export default function PropertyPage() {
       <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
         <DialogContent className="sm:max-w-4xl bg-black border-none p-0">
           <div className="relative h-[80vh]">
-            {property.images[currentImageIndex] && (
-              <img src={property.images[currentImageIndex]} alt={property.name} className="w-full h-full object-contain" />
+            {mediaList[currentImageIndex] && (
+              mediaList[currentImageIndex].type === 'video' ? (
+                <video src={mediaList[currentImageIndex].url} controls autoPlay className="w-full h-full object-contain" />
+              ) : (
+                <img src={mediaList[currentImageIndex].url} alt={property.name} className="w-full h-full object-contain" />
+              )
             )}
-            {property.images.length > 1 && (
+            {mediaList.length > 1 && (
               <>
                 <button onClick={prevImage} className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/20 backdrop-blur rounded-full flex items-center justify-center text-white hover:bg-white/30">
                   <ChevronLeft className="w-6 h-6" />

@@ -11,7 +11,9 @@ export interface Property {
   pricePerNight: number;
   currency: string;
   whatsappNumber: string;
+  instagram?: string;
   images: string[];
+  videos?: string[];
   video?: string;
   roomTypes?: RoomType[];
   createdAt: string;
@@ -63,7 +65,9 @@ export const DEMO_PROPERTIES: Property[] = [
     pricePerNight: 4500,
     currency: '₹',
     whatsappNumber: '919876543210',
+    instagram: 'villamoonlight',
     images: [],
+    videos: [],
     roomTypes: [
       { id: 'r1', name: 'Deluxe Suite', description: 'King bed, ocean view, private balcony', pricePerNight: 4500, maxGuests: 2 },
       { id: 'r2', name: 'Garden Room', description: 'Queen bed, garden access', pricePerNight: 3500, maxGuests: 2 },
@@ -80,7 +84,9 @@ export const DEMO_PROPERTIES: Property[] = [
     pricePerNight: 3200,
     currency: '₹',
     whatsappNumber: '919876543210',
+    instagram: 'treehouseretreat',
     images: [],
+    videos: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },

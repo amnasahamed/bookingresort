@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Calendar, 
-  Plus, 
-  LogOut, 
-  ExternalLink, 
-  Copy, 
+import {
+  Calendar,
+  Plus,
+  LogOut,
+  ExternalLink,
+  Copy,
   Check,
   Trash2,
   Edit,
@@ -18,7 +18,8 @@ import {
   Upload,
   IndianRupee,
   MapPin,
-  Phone
+  Phone,
+  Video
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,11 +30,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import type { Property, DateStatus } from '@/types';
-import { 
-  getProperties, 
-  getPropertyById, 
-  saveProperty, 
-  deleteProperty, 
+import {
+  getProperties,
+  getPropertyById,
+  saveProperty,
+  deleteProperty,
   generateSlug,
   getMonthCalendar,
   setDateStatus,
@@ -59,7 +60,9 @@ export default function AdminDashboard() {
   const [propertyLocation, setPropertyLocation] = useState('');
   const [propertyPrice, setPropertyPrice] = useState('');
   const [propertyWhatsapp, setPropertyWhatsapp] = useState('');
+  const [propertyInstagram, setPropertyInstagram] = useState('');
   const [propertyImages, setPropertyImages] = useState<string[]>([]);
+  const [propertyVideos, setPropertyVideos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
@@ -119,7 +122,9 @@ export default function AdminDashboard() {
       pricePerNight: parseInt(propertyPrice) || 0,
       currency: '₹',
       whatsappNumber: propertyWhatsapp.replace(/\D/g, ''),
+      instagram: propertyInstagram,
       images: propertyImages,
+      videos: propertyVideos,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -145,7 +150,9 @@ export default function AdminDashboard() {
       location: propertyLocation,
       pricePerNight: parseInt(propertyPrice) || 0,
       whatsappNumber: propertyWhatsapp.replace(/\D/g, ''),
+      instagram: propertyInstagram,
       images: propertyImages,
+      videos: propertyVideos,
       updatedAt: new Date().toISOString(),
     };
 
@@ -174,7 +181,9 @@ export default function AdminDashboard() {
     setPropertyLocation(property.location);
     setPropertyPrice(property.pricePerNight.toString());
     setPropertyWhatsapp(property.whatsappNumber);
+    setPropertyInstagram(property.instagram || '');
     setPropertyImages(property.images);
+    setPropertyVideos(property.videos || []);
     setShowEditProperty(true);
   };
 
@@ -184,30 +193,41 @@ export default function AdminDashboard() {
     setPropertyLocation('');
     setPropertyPrice('');
     setPropertyWhatsapp('');
+    setPropertyInstagram('');
     setPropertyImages([]);
+    setPropertyVideos([]);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
     setUploading(true);
     const newImages: string[] = [];
+    const newVideos: string[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       if (file.type.startsWith('image/')) {
         const base64 = await storeImage(file);
         newImages.push(base64);
+      } else if (file.type.startsWith('video/')) {
+        const base64 = await storeImage(file);
+        newVideos.push(base64);
       }
     }
 
     setPropertyImages([...propertyImages, ...newImages]);
+    setPropertyVideos([...propertyVideos, ...newVideos]);
     setUploading(false);
   };
 
   const removeImage = (index: number) => {
     setPropertyImages(propertyImages.filter((_, i) => i !== index));
+  };
+
+  const removeVideo = (index: number) => {
+    setPropertyVideos(propertyVideos.filter((_, i) => i !== index));
   };
 
   const copyPropertyLink = (slug: string) => {
@@ -221,10 +241,10 @@ export default function AdminDashboard() {
     if (!selectedPropertyId) return;
     const dateStr = format(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day), 'yyyy-MM-dd');
     const currentStatus = calendarData[day] || 'open';
-    const newStatus: DateStatus = 
-      currentStatus === 'open' ? 'booked' : 
-      currentStatus === 'booked' ? 'hold' : 'open';
-    
+    const newStatus: DateStatus =
+      currentStatus === 'open' ? 'booked' :
+        currentStatus === 'booked' ? 'hold' : 'open';
+
     setDateStatus(selectedPropertyId, dateStr, newStatus);
     setCalendarData({ ...calendarData, [day]: newStatus });
   };
@@ -284,16 +304,14 @@ export default function AdminDashboard() {
                   <button
                     key={property.id}
                     onClick={() => setSelectedPropertyId(property.id)}
-                    className={`w-full text-left p-3 rounded-lg mb-1 transition-colors ${
-                      selectedPropertyId === property.id
-                        ? 'bg-emerald-50 border-emerald-200 border'
-                        : 'hover:bg-gray-50'
-                    }`}
+                    className={`w-full text-left p-3 rounded-lg mb-1 transition-colors ${selectedPropertyId === property.id
+                      ? 'bg-emerald-50 border-emerald-200 border'
+                      : 'hover:bg-gray-50'
+                      }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className={`font-medium ${
-                        selectedPropertyId === property.id ? 'text-emerald-700' : 'text-gray-700'
-                      }`}>
+                      <span className={`font-medium ${selectedPropertyId === property.id ? 'text-emerald-700' : 'text-gray-700'
+                        }`}>
                         {property.name}
                       </span>
                       {selectedPropertyId === property.id && (
@@ -409,9 +427,9 @@ export default function AdminDashboard() {
                       <Calendar className="w-4 h-4 mr-2" />
                       Calendar
                     </TabsTrigger>
-                    <TabsTrigger value="photos" className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700">
+                    <TabsTrigger value="media" className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700">
                       <ImageIcon className="w-4 h-4 mr-2" />
-                      Photos
+                      Media
                     </TabsTrigger>
                     <TabsTrigger value="settings" className="data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700">
                       <Settings className="w-4 h-4 mr-2" />
@@ -502,47 +520,47 @@ export default function AdminDashboard() {
                     </div>
                   </TabsContent>
 
-                  {/* Photos Tab */}
-                  <TabsContent value="photos" className="mt-6">
+                  {/* Media Tab */}
+                  <TabsContent value="media" className="mt-6">
                     <div className="bg-white rounded-xl shadow-sm border p-6">
                       <div className="flex items-center justify-between mb-6">
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900">Property Photos</h3>
+                          <h3 className="text-lg font-semibold text-gray-900">Property Media</h3>
                           <p className="text-sm text-gray-500 mt-1">
-                            Upload vertical photos for best mobile experience
+                            Upload vertical photos and videos for best mobile experience
                           </p>
                         </div>
                         <Label className="cursor-pointer">
                           <Input
                             type="file"
-                            accept="image/*"
+                            accept="image/*,video/*"
                             multiple
                             className="hidden"
-                            onChange={handleImageUpload}
+                            onChange={handleMediaUpload}
                             disabled={uploading}
                           />
                           <Button variant="outline" className="cursor-pointer" asChild>
                             <span>
                               <Upload className="w-4 h-4 mr-2" />
-                              {uploading ? 'Uploading...' : 'Upload Photos'}
+                              {uploading ? 'Uploading...' : 'Upload Media'}
                             </span>
                           </Button>
                         </Label>
                       </div>
 
-                      {selectedProperty.images.length === 0 ? (
+                      {selectedProperty.images.length === 0 && (!selectedProperty.videos || selectedProperty.videos.length === 0) ? (
                         <div className="text-center py-12 border-2 border-dashed rounded-xl">
                           <ImageIcon className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                          <p className="text-gray-500">No photos yet</p>
-                          <p className="text-sm text-gray-400">Upload photos to showcase your property</p>
+                          <p className="text-gray-500">No media yet</p>
+                          <p className="text-sm text-gray-400">Upload photos and videos to showcase your property</p>
                         </div>
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                           {selectedProperty.images.map((image, index) => (
-                            <div key={index} className="relative group aspect-[3/4] rounded-lg overflow-hidden">
+                            <div key={`img-${index}`} className="relative group aspect-[3/4] rounded-lg overflow-hidden">
                               <img
                                 src={image}
-                                alt={`${selectedProperty.name} - ${index + 1}`}
+                                alt={`${selectedProperty.name} - Photo ${index + 1}`}
                                 className="w-full h-full object-cover"
                               />
                               <button
@@ -553,6 +571,28 @@ export default function AdminDashboard() {
                                   loadProperties();
                                 }}
                                 className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+                          {selectedProperty.videos?.map((video, index) => (
+                            <div key={`vid-${index}`} className="relative group aspect-[3/4] rounded-lg overflow-hidden bg-black">
+                              <video
+                                src={video}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <Video className="w-8 h-8 text-white/70" />
+                              </div>
+                              <button
+                                onClick={() => {
+                                  const updatedVideos = selectedProperty.videos!.filter((_, i) => i !== index);
+                                  const updatedProperty = { ...selectedProperty, videos: updatedVideos };
+                                  saveProperty(updatedProperty);
+                                  loadProperties();
+                                }}
+                                className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
                               >
                                 <X className="w-4 h-4" />
                               </button>
@@ -597,6 +637,13 @@ export default function AdminDashboard() {
                           <Label className="text-sm text-gray-600">Price per Night</Label>
                           <p className="text-sm font-medium mt-1">
                             {selectedProperty.currency}{selectedProperty.pricePerNight.toLocaleString()}
+                          </p>
+                        </div>
+                        <Separator />
+                        <div>
+                          <Label className="text-sm text-gray-600">Instagram</Label>
+                          <p className="text-sm font-medium mt-1">
+                            {selectedProperty.instagram ? `@${selectedProperty.instagram}` : 'Not provided'}
                           </p>
                         </div>
                         <Separator />
@@ -689,34 +736,59 @@ export default function AdminDashboard() {
               <p className="text-xs text-gray-500 mt-1">Include country code without +</p>
             </div>
             <div>
-              <Label>Photos</Label>
+              <Label htmlFor="instagram">Instagram Username</Label>
+              <Input
+                id="instagram"
+                value={propertyInstagram}
+                onChange={(e) => setPropertyInstagram(e.target.value)}
+                placeholder="e.g., bookingresort"
+              />
+              <p className="text-xs text-gray-500 mt-1">Username without @ symbol</p>
+            </div>
+            <div>
+              <Label>Media</Label>
               <div className="mt-2">
                 <Label className="cursor-pointer">
                   <Input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,video/*"
                     multiple
                     className="hidden"
-                    onChange={handleImageUpload}
+                    onChange={handleMediaUpload}
                     disabled={uploading}
                   />
                   <div className="border-2 border-dashed rounded-lg p-4 text-center hover:bg-gray-50 transition-colors">
                     <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
                     <span className="text-sm text-gray-600">
-                      {uploading ? 'Uploading...' : 'Click to upload photos'}
+                      {uploading ? 'Uploading...' : 'Click to upload photos and videos'}
                     </span>
                   </div>
                 </Label>
               </div>
-              {propertyImages.length > 0 && (
+              {(propertyImages.length > 0 || propertyVideos.length > 0) && (
                 <div className="grid grid-cols-4 gap-2 mt-4">
                   {propertyImages.map((image, index) => (
-                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden">
+                    <div key={`add-img-${index}`} className="relative aspect-square rounded-lg overflow-hidden">
                       <img src={image} alt="" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
                         className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {propertyVideos.map((video, index) => (
+                    <div key={`add-vid-${index}`} className="relative aspect-square rounded-lg overflow-hidden bg-black">
+                      <video src={video} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <Video className="w-6 h-6 text-white/70" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeVideo(index)}
+                        className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center z-10"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -803,34 +875,57 @@ export default function AdminDashboard() {
               />
             </div>
             <div>
-              <Label>Photos</Label>
+              <Label htmlFor="edit-instagram">Instagram Username</Label>
+              <Input
+                id="edit-instagram"
+                value={propertyInstagram}
+                onChange={(e) => setPropertyInstagram(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Media</Label>
               <div className="mt-2">
                 <Label className="cursor-pointer">
                   <Input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,video/*"
                     multiple
                     className="hidden"
-                    onChange={handleImageUpload}
+                    onChange={handleMediaUpload}
                     disabled={uploading}
                   />
                   <div className="border-2 border-dashed rounded-lg p-4 text-center hover:bg-gray-50 transition-colors">
                     <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
                     <span className="text-sm text-gray-600">
-                      {uploading ? 'Uploading...' : 'Add more photos'}
+                      {uploading ? 'Uploading...' : 'Add more photos and videos'}
                     </span>
                   </div>
                 </Label>
               </div>
-              {propertyImages.length > 0 && (
+              {(propertyImages.length > 0 || propertyVideos.length > 0) && (
                 <div className="grid grid-cols-4 gap-2 mt-4">
                   {propertyImages.map((image, index) => (
-                    <div key={index} className="relative aspect-square rounded-lg overflow-hidden">
+                    <div key={`edit-img-${index}`} className="relative aspect-square rounded-lg overflow-hidden">
                       <img src={image} alt="" className="w-full h-full object-cover" />
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
                         className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  {propertyVideos.map((video, index) => (
+                    <div key={`edit-vid-${index}`} className="relative aspect-square rounded-lg overflow-hidden bg-black">
+                      <video src={video} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <Video className="w-6 h-6 text-white/70" />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeVideo(index)}
+                        className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center z-10"
                       >
                         <X className="w-3 h-3" />
                       </button>
