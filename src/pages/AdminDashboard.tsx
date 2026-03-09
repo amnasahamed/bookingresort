@@ -19,8 +19,27 @@ import {
   IndianRupee,
   MapPin,
   Phone,
-  Video
+  Video,
+  Wifi,
+  Waves,
+  Wind,
+  Car,
+  Trees,
+  Utensils,
+  Tv,
+  Shirt
 } from 'lucide-react';
+
+export const AMENITIES_LIST = [
+  { id: 'wifi', label: 'Wi-Fi', icon: Wifi },
+  { id: 'pool', label: 'Swimming Pool', icon: Waves },
+  { id: 'ac', label: 'Air Conditioning', icon: Wind },
+  { id: 'parking', label: 'Free Parking', icon: Car },
+  { id: 'balcony', label: 'Balcony/Terrace', icon: Trees },
+  { id: 'kitchen', label: 'Kitchen', icon: Utensils },
+  { id: 'tv', label: 'TV', icon: Tv },
+  { id: 'washer', label: 'Washer', icon: Shirt }
+];
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -61,6 +80,8 @@ export default function AdminDashboard() {
   const [propertyPrice, setPropertyPrice] = useState('');
   const [propertyWhatsapp, setPropertyWhatsapp] = useState('');
   const [propertyInstagram, setPropertyInstagram] = useState('');
+  const [propertyMapLink, setPropertyMapLink] = useState('');
+  const [propertyAmenities, setPropertyAmenities] = useState<string[]>([]);
   const [propertyImages, setPropertyImages] = useState<string[]>([]);
   const [propertyVideos, setPropertyVideos] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -123,6 +144,8 @@ export default function AdminDashboard() {
       currency: '₹',
       whatsappNumber: propertyWhatsapp.replace(/\D/g, ''),
       instagram: propertyInstagram,
+      mapLink: propertyMapLink,
+      amenities: propertyAmenities,
       images: propertyImages,
       videos: propertyVideos,
       createdAt: new Date().toISOString(),
@@ -151,6 +174,8 @@ export default function AdminDashboard() {
       pricePerNight: parseInt(propertyPrice) || 0,
       whatsappNumber: propertyWhatsapp.replace(/\D/g, ''),
       instagram: propertyInstagram,
+      mapLink: propertyMapLink,
+      amenities: propertyAmenities,
       images: propertyImages,
       videos: propertyVideos,
       updatedAt: new Date().toISOString(),
@@ -182,6 +207,8 @@ export default function AdminDashboard() {
     setPropertyPrice(property.pricePerNight.toString());
     setPropertyWhatsapp(property.whatsappNumber);
     setPropertyInstagram(property.instagram || '');
+    setPropertyMapLink(property.mapLink || '');
+    setPropertyAmenities(property.amenities || []);
     setPropertyImages(property.images);
     setPropertyVideos(property.videos || []);
     setShowEditProperty(true);
@@ -194,6 +221,8 @@ export default function AdminDashboard() {
     setPropertyPrice('');
     setPropertyWhatsapp('');
     setPropertyInstagram('');
+    setPropertyMapLink('');
+    setPropertyAmenities([]);
     setPropertyImages([]);
     setPropertyVideos([]);
   };
@@ -746,6 +775,40 @@ export default function AdminDashboard() {
               <p className="text-xs text-gray-500 mt-1">Username without @ symbol</p>
             </div>
             <div>
+              <Label htmlFor="mapLink">Google Maps Link</Label>
+              <Input
+                id="mapLink"
+                value={propertyMapLink}
+                onChange={(e) => setPropertyMapLink(e.target.value)}
+                placeholder="https://maps.google.com/..."
+              />
+            </div>
+            <div>
+              <Label>Amenities</Label>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {AMENITIES_LIST.map((amenity) => (
+                  <label key={`add-amn-${amenity.id}`} className="flex items-center space-x-2 border p-2 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={propertyAmenities.includes(amenity.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setPropertyAmenities([...propertyAmenities, amenity.id]);
+                        } else {
+                          setPropertyAmenities(propertyAmenities.filter(id => id !== amenity.id));
+                        }
+                      }}
+                      className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                    />
+                    <span className="text-sm text-gray-700 flex items-center gap-2">
+                      <amenity.icon className="w-4 h-4 text-emerald-600" />
+                      {amenity.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
               <Label>Media</Label>
               <div className="mt-2">
                 <Label className="cursor-pointer">
@@ -881,6 +944,40 @@ export default function AdminDashboard() {
                 value={propertyInstagram}
                 onChange={(e) => setPropertyInstagram(e.target.value)}
               />
+            </div>
+            <div>
+              <Label htmlFor="edit-mapLink">Google Maps Link</Label>
+              <Input
+                id="edit-mapLink"
+                value={propertyMapLink}
+                onChange={(e) => setPropertyMapLink(e.target.value)}
+                placeholder="https://maps.google.com/..."
+              />
+            </div>
+            <div>
+              <Label>Amenities</Label>
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                {AMENITIES_LIST.map((amenity) => (
+                  <label key={`edit-amn-${amenity.id}`} className="flex items-center space-x-2 border p-2 rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={propertyAmenities.includes(amenity.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setPropertyAmenities([...propertyAmenities, amenity.id]);
+                        } else {
+                          setPropertyAmenities(propertyAmenities.filter(id => id !== amenity.id));
+                        }
+                      }}
+                      className="rounded border-gray-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                    />
+                    <span className="text-sm text-gray-700 flex items-center gap-2">
+                      <amenity.icon className="w-4 h-4 text-emerald-600" />
+                      {amenity.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
             <div>
               <Label>Media</Label>

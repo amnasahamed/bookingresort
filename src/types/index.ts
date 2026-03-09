@@ -15,6 +15,8 @@ export interface Property {
   images: string[];
   videos?: string[];
   video?: string;
+  amenities?: string[];
+  mapLink?: string;
   roomTypes?: RoomType[];
   createdAt: string;
   updatedAt: string;
@@ -68,6 +70,8 @@ export const DEMO_PROPERTIES: Property[] = [
     instagram: 'villamoonlight',
     images: [],
     videos: [],
+    amenities: ['wifi', 'pool', 'ac', 'parking', 'balcony'],
+    mapLink: 'https://maps.google.com/?q=Goa',
     roomTypes: [
       { id: 'r1', name: 'Deluxe Suite', description: 'King bed, ocean view, private balcony', pricePerNight: 4500, maxGuests: 2 },
       { id: 'r2', name: 'Garden Room', description: 'Queen bed, garden access', pricePerNight: 3500, maxGuests: 2 },
@@ -87,6 +91,8 @@ export const DEMO_PROPERTIES: Property[] = [
     instagram: 'treehouseretreat',
     images: [],
     videos: [],
+    amenities: ['wifi', 'balcony'],
+    mapLink: 'https://maps.google.com/?q=Kerala',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },

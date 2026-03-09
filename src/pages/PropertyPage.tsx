@@ -12,9 +12,11 @@ import {
   Share2,
   ArrowLeft,
   Instagram,
-  Video
+  Video,
+  Map
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AMENITIES_LIST } from './AdminDashboard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { getPropertyBySlug, getMonthCalendar } from '@/lib/storage';
@@ -56,6 +58,34 @@ export default function PropertyPage() {
       setLoading(false);
     }
   }, [slug]);
+
+  useEffect(() => {
+    if (property) {
+      document.title = `${property.name} - BookPage`;
+
+      const metaTags = {
+        'og:title': property.name,
+        'og:description': property.description,
+        'og:image': property.images?.[0] || '',
+        'og:url': window.location.href,
+        'twitter:card': 'summary_large_image',
+      };
+
+      Object.entries(metaTags).forEach(([name, content]) => {
+        let meta = document.querySelector(`meta[property="${name}"]`) || document.querySelector(`meta[name="${name}"]`);
+        if (!meta) {
+          meta = document.createElement('meta');
+          if (name.startsWith('og:')) {
+            meta.setAttribute('property', name);
+          } else {
+            meta.setAttribute('name', name);
+          }
+          document.head.appendChild(meta);
+        }
+        meta.setAttribute('content', content);
+      });
+    }
+  }, [property]);
 
   useEffect(() => {
     if (property) {
@@ -270,6 +300,11 @@ export default function PropertyPage() {
             <h1 className="text-2xl font-bold text-white mb-2">{property.name}</h1>
             <div className="flex items-center gap-4 text-white/80 text-sm flex-wrap">
               <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{property.location}</span>
+              {property.mapLink && (
+                <a href={property.mapLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-white transition-colors">
+                  <Map className="w-4 h-4" />View on Map
+                </a>
+              )}
               <span className="flex items-center gap-1"><IndianRupee className="w-4 h-4" />{property.pricePerNight.toLocaleString()}/night</span>
               {property.instagram && (
                 <a href={`https://instagram.com/${property.instagram}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-white transition-colors">
@@ -282,6 +317,21 @@ export default function PropertyPage() {
         </div>
 
         <div className="p-4 bg-white">
+          {property.amenities && property.amenities.length > 0 && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-3">Amenities</h2>
+              <div className="grid grid-cols-2 gap-3">
+                {AMENITIES_LIST.filter(a => property.amenities!.includes(a.id)).map(amenity => (
+                  <div key={amenity.id} className="flex items-center gap-2 text-gray-700">
+                    <amenity.icon className="w-4 h-4 text-emerald-600" />
+                    <span className="text-sm">{amenity.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <Separator className="mb-6" />
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900">Check Availability</h2>
             <div className="flex items-center gap-2">
@@ -445,6 +495,11 @@ export default function PropertyPage() {
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">{property.name}</h1>
                 <div className="flex items-center gap-4 text-gray-600 flex-wrap">
                   <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{property.location}</span>
+                  {property.mapLink && (
+                    <a href={property.mapLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-emerald-600 transition-colors">
+                      <Map className="w-4 h-4" />View on Map
+                    </a>
+                  )}
                   {property.instagram && (
                     <a href={`https://instagram.com/${property.instagram}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-emerald-600 transition-colors">
                       <Instagram className="w-4 h-4" />@{property.instagram}
@@ -457,6 +512,21 @@ export default function PropertyPage() {
                 <span className="text-gray-500">/ night</span>
               </div>
               <p className="text-gray-600 mb-8">{property.description}</p>
+
+              {property.amenities && property.amenities.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="font-semibold text-gray-900 mb-4">Amenities</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {AMENITIES_LIST.filter(a => property.amenities!.includes(a.id)).map(amenity => (
+                      <div key={amenity.id} className="flex items-center gap-3 text-gray-700">
+                        <amenity.icon className="w-5 h-5 text-emerald-600" />
+                        <span className="text-sm font-medium">{amenity.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <Separator className="mb-6" />
 
               <div className="mb-6">
