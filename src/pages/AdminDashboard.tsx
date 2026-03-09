@@ -51,19 +51,19 @@ import { Separator } from '@/components/ui/separator';
 import type { Property, DateStatus } from '@/types';
 import {
   getProperties,
-  getPropertyById,
   saveProperty,
   deleteProperty,
-  generateSlug,
   getMonthCalendar,
   setDateStatus,
-  logoutAdmin,
-  storeImage
-} from '@/lib/storage';
+  signOut,
+  uploadMedia
+} from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths } from 'date-fns';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [showAddProperty, setShowAddProperty] = useState(false);
@@ -107,36 +107,47 @@ export default function AdminDashboard() {
     return () => window.removeEventListener('calendar:updated', handleCalendarUpdate);
   }, [selectedPropertyId]);
 
-  const loadProperties = () => {
-    const props = getProperties();
-    setProperties(props);
-    if (props.length > 0 && !selectedPropertyId) {
-      setSelectedPropertyId(props[0].id);
+  const loadProperties = async () => {
+    try {
+      const props = await getProperties();
+      setProperties(props);
+      if (props.length > 0 && !selectedPropertyId) {
+        setSelectedPropertyId(props[0].id);
+      }
+    } catch (error) {
+      console.error('Error loading properties:', error);
     }
   };
 
-  const loadCalendar = () => {
+  const loadCalendar = async () => {
     if (!selectedPropertyId) return;
-    const data = getMonthCalendar(
-      selectedPropertyId,
-      currentMonth.getFullYear(),
-      currentMonth.getMonth()
-    );
-    setCalendarData(data);
+    try {
+      const data = await getMonthCalendar(
+        selectedPropertyId,
+        currentMonth.getFullYear(),
+        currentMonth.getMonth()
+      );
+      setCalendarData(data);
+    } catch (error) {
+      console.error('Error loading calendar:', error);
+    }
   };
 
-  const handleLogout = () => {
-    logoutAdmin();
+  const handleLogout = async () => {
+    await signOut();
     navigate('/');
   };
 
   const handleAddProperty = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!propertyName.trim()) return;
+    if (!propertyName.trim() || !user) return;
 
-    const newProperty: Property = {
-      id: Date.now().toString(),
-      slug: generateSlug(propertyName),
+    // Simple basic slug gen
+    const base = propertyName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const slug = `${base}-${Date.now().toString().slice(-4)}`;
+
+    const newProperty: Partial<Property> = {
+      slug,
       name: propertyName,
       description: propertyDescription,
       location: propertyLocation,
@@ -152,22 +163,28 @@ export default function AdminDashboard() {
       updatedAt: new Date().toISOString(),
     };
 
-    saveProperty(newProperty);
-    setShowAddProperty(false);
-    resetForm();
-    loadProperties();
-    setSelectedPropertyId(newProperty.id);
+    try {
+      const created = await saveProperty(newProperty, user.id);
+      setShowAddProperty(false);
+      resetForm();
+      await loadProperties();
+      setSelectedPropertyId(created.id);
+    } catch (error) {
+      console.error('Error creating property:', error);
+      alert('Failed to create property. Please try again.');
+    }
   };
 
   const handleEditProperty = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedPropertyId) return;
+    if (!selectedPropertyId || !user) return;
 
-    const property = getPropertyById(selectedPropertyId);
+    const property = properties.find(p => p.id === selectedPropertyId);
     if (!property) return;
 
-    const updatedProperty: Property = {
-      ...property,
+    const updatedProperty: Partial<Property> = {
+      id: property.id,
+      slug: property.slug,
       name: propertyName,
       description: propertyDescription,
       location: propertyLocation,
@@ -178,27 +195,36 @@ export default function AdminDashboard() {
       amenities: propertyAmenities,
       images: propertyImages,
       videos: propertyVideos,
-      updatedAt: new Date().toISOString(),
     };
 
-    saveProperty(updatedProperty);
-    setShowEditProperty(false);
-    loadProperties();
+    try {
+      await saveProperty(updatedProperty, user.id);
+      setShowEditProperty(false);
+      await loadProperties();
+    } catch (error) {
+      console.error('Error updating property:', error);
+      alert('Failed to update property. Please try again.');
+    }
   };
 
-  const handleDeleteProperty = (id: string) => {
+  const handleDeleteProperty = async (id: string) => {
     if (confirm('Are you sure you want to delete this property? This cannot be undone.')) {
-      deleteProperty(id);
-      loadProperties();
-      if (selectedPropertyId === id) {
-        const remaining = getProperties();
-        setSelectedPropertyId(remaining.length > 0 ? remaining[0].id : null);
+      try {
+        await deleteProperty(id);
+        const remaining = properties.filter(p => p.id !== id);
+        setProperties(remaining);
+        if (selectedPropertyId === id) {
+          setSelectedPropertyId(remaining.length > 0 ? remaining[0].id : null);
+        }
+      } catch (error) {
+        console.error('Error deleting property:', error);
+        alert('Failed to delete property.');
       }
     }
   };
 
   const openEditDialog = () => {
-    const property = getPropertyById(selectedPropertyId!);
+    const property = properties.find(p => p.id === selectedPropertyId);
     if (!property) return;
 
     setPropertyName(property.name);
@@ -237,12 +263,16 @@ export default function AdminDashboard() {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (file.type.startsWith('image/')) {
-        const base64 = await storeImage(file);
-        newImages.push(base64);
-      } else if (file.type.startsWith('video/')) {
-        const base64 = await storeImage(file);
-        newVideos.push(base64);
+      try {
+        if (file.type.startsWith('image/')) {
+          const url = await uploadMedia(file);
+          newImages.push(url);
+        } else if (file.type.startsWith('video/')) {
+          const url = await uploadMedia(file);
+          newVideos.push(url);
+        }
+      } catch (error) {
+        console.error('Error uploading media:', error);
       }
     }
 
@@ -286,7 +316,7 @@ export default function AdminDashboard() {
     }
   };
 
-  const selectedProperty = selectedPropertyId ? getPropertyById(selectedPropertyId) : null;
+  const selectedProperty = selectedPropertyId ? properties.find(p => p.id === selectedPropertyId) ?? null : null;
 
   // Generate calendar days
   const monthStart = startOfMonth(currentMonth);
@@ -585,7 +615,7 @@ export default function AdminDashboard() {
                         </div>
                       ) : (
                         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                          {selectedProperty.images.map((image, index) => (
+                          {selectedProperty.images.map((image: string, index: number) => (
                             <div key={`img-${index}`} className="relative group aspect-[3/4] rounded-lg overflow-hidden">
                               <img
                                 src={image}
@@ -593,11 +623,12 @@ export default function AdminDashboard() {
                                 className="w-full h-full object-cover"
                               />
                               <button
-                                onClick={() => {
-                                  const updatedImages = selectedProperty.images.filter((_, i) => i !== index);
+                                onClick={async () => {
+                                  if (!user) return;
+                                  const updatedImages = selectedProperty.images.filter((_: string, i: number) => i !== index);
                                   const updatedProperty = { ...selectedProperty, images: updatedImages };
-                                  saveProperty(updatedProperty);
-                                  loadProperties();
+                                  await saveProperty(updatedProperty, user.id);
+                                  await loadProperties();
                                 }}
                                 className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
                               >
@@ -605,7 +636,7 @@ export default function AdminDashboard() {
                               </button>
                             </div>
                           ))}
-                          {selectedProperty.videos?.map((video, index) => (
+                          {selectedProperty.videos?.map((video: string, index: number) => (
                             <div key={`vid-${index}`} className="relative group aspect-[3/4] rounded-lg overflow-hidden bg-black">
                               <video
                                 src={video}
@@ -615,11 +646,12 @@ export default function AdminDashboard() {
                                 <Video className="w-8 h-8 text-white/70" />
                               </div>
                               <button
-                                onClick={() => {
-                                  const updatedVideos = selectedProperty.videos!.filter((_, i) => i !== index);
+                                onClick={async () => {
+                                  if (!user) return;
+                                  const updatedVideos = selectedProperty.videos!.filter((_: string, i: number) => i !== index);
                                   const updatedProperty = { ...selectedProperty, videos: updatedVideos };
-                                  saveProperty(updatedProperty);
-                                  loadProperties();
+                                  await saveProperty(updatedProperty, user.id);
+                                  await loadProperties();
                                 }}
                                 className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
                               >

@@ -1,12 +1,13 @@
 // Local Storage Utilities for BookPage
 
-import type { Property, DateStatus, BookingCalendar } from '@/types';
+import type { Property, DateStatus, BookingCalendar, User } from '@/types';
 import { DEMO_PROPERTIES } from '@/types';
 
 const STORAGE_KEYS = {
   PROPERTIES: 'bookpage_properties',
   CALENDARS: 'bookpage_calendars',
-  ADMIN_AUTH: 'bookpage_admin_auth',
+  AUTH_USER: 'bookpage_auth_user',
+  USERS: 'bookpage_users',
 };
 
 // Initialize with demo data if empty
@@ -20,6 +21,19 @@ export function initializeStorage(): void {
       defaultCalendar[prop.id] = { propertyId: prop.id, dates: {} };
     });
     localStorage.setItem(STORAGE_KEYS.CALENDARS, JSON.stringify(defaultCalendar));
+  }
+  if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
+    // Default superadmin user
+    const defaultUsers: User[] = [
+      {
+        id: 'superadmin-1',
+        email: 'superadmin@bookpage.com',
+        role: 'superadmin',
+        name: 'Super Admin',
+        createdAt: new Date().toISOString(),
+      }
+    ];
+    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(defaultUsers));
   }
 }
 
@@ -53,7 +67,7 @@ export function saveProperty(property: Property): void {
 export function deleteProperty(id: string): void {
   const properties = getProperties().filter(p => p.id !== id);
   localStorage.setItem(STORAGE_KEYS.PROPERTIES, JSON.stringify(properties));
-  
+
   // Also delete associated calendar
   const calendars = getCalendars();
   delete calendars[id];
@@ -90,10 +104,10 @@ export function setDateStatus(propertyId: string, date: string, status: DateStat
   }
   calendars[propertyId].dates[date] = status;
   localStorage.setItem(STORAGE_KEYS.CALENDARS, JSON.stringify(calendars));
-  
+
   // Dispatch event for real-time updates
-  window.dispatchEvent(new CustomEvent('calendar:updated', { 
-    detail: { propertyId, date, status } 
+  window.dispatchEvent(new CustomEvent('calendar:updated', {
+    detail: { propertyId, date, status }
   }));
 }
 
@@ -106,30 +120,68 @@ export function getMonthCalendar(propertyId: string, year: number, month: number
   const calendar = getCalendar(propertyId);
   const result: Record<number, DateStatus> = {};
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  
+
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     result[day] = calendar.dates[dateStr] || 'open';
   }
-  
+
   return result;
 }
 
-// Admin Auth
+// Mock User Management & Auth
+export function getUsers(): User[] {
+  const data = localStorage.getItem(STORAGE_KEYS.USERS);
+  return data ? JSON.parse(data) : [];
+}
+
+export function saveUser(user: User): void {
+  const users = getUsers();
+  const index = users.findIndex(u => u.id === user.id);
+  if (index >= 0) {
+    users[index] = user;
+  } else {
+    users.push(user);
+  }
+  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+}
+
+export function deleteUser(id: string): void {
+  const users = getUsers().filter(u => u.id !== id);
+  localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(users));
+}
+
+// Simple mock for authentication
+export function getAuthenticatedUser(): User | null {
+  const data = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
+  return data ? JSON.parse(data) : null;
+}
+
+export function setAuthenticatedUser(user: User | null): void {
+  if (user) {
+    localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(user));
+  } else {
+    localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
+  }
+}
+
+export function logoutUser(): void {
+  localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
+}
+
+// Retained for backward compat in UI mock
 export function checkAdminPassword(password: string): boolean {
-  return password === 'admin123'; // Simple password for demo
+  return password === 'admin123';
 }
 
 export function isAdminAuthenticated(): boolean {
-  return localStorage.getItem(STORAGE_KEYS.ADMIN_AUTH) === 'true';
+  const user = getAuthenticatedUser();
+  return user !== null && user.role === 'admin';
 }
 
-export function setAdminAuthenticated(value: boolean): void {
-  localStorage.setItem(STORAGE_KEYS.ADMIN_AUTH, value ? 'true' : 'false');
-}
-
-export function logoutAdmin(): void {
-  localStorage.removeItem(STORAGE_KEYS.ADMIN_AUTH);
+export function isSuperadminAuthenticated(): boolean {
+  const user = getAuthenticatedUser();
+  return user !== null && user.role === 'superadmin';
 }
 
 // Image storage (using base64 for demo - in production use Vercel Blob)

@@ -19,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { AMENITIES_LIST } from './AdminDashboard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
-import { getPropertyBySlug, getMonthCalendar } from '@/lib/storage';
+import { getPropertyBySlug, getMonthCalendar } from '@/lib/api';
 import type { Property, DateStatus } from '@/types';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths, isSameDay } from 'date-fns';
 
@@ -50,13 +50,22 @@ export default function PropertyPage() {
     : [];
 
   useEffect(() => {
-    if (slug) {
-      const prop = getPropertyBySlug(slug);
-      if (prop) {
-        setProperty(prop);
+    async function loadProp() {
+      if (slug) {
+        setLoading(true);
+        try {
+          const prop = await getPropertyBySlug(slug);
+          if (prop) {
+            setProperty(prop);
+          }
+        } catch (error) {
+          console.error("Failed to load property:", error);
+        } finally {
+          setLoading(false);
+        }
       }
-      setLoading(false);
     }
+    loadProp();
   }, [slug]);
 
   useEffect(() => {
@@ -101,14 +110,18 @@ export default function PropertyPage() {
     return () => window.removeEventListener('calendar:updated', handleCalendarUpdate);
   }, [property, currentMonth]);
 
-  const loadCalendar = () => {
+  const loadCalendar = async () => {
     if (!property) return;
-    const data = getMonthCalendar(
-      property.id,
-      currentMonth.getFullYear(),
-      currentMonth.getMonth()
-    );
-    setCalendarData(data);
+    try {
+      const data = await getMonthCalendar(
+        property.id,
+        currentMonth.getFullYear(),
+        currentMonth.getMonth()
+      );
+      setCalendarData(data);
+    } catch (error) {
+      console.error("Failed to load calendar", error);
+    }
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {

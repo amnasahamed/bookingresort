@@ -18,8 +18,19 @@ export interface Property {
   amenities?: string[];
   mapLink?: string;
   roomTypes?: RoomType[];
+  adminId?: string; // Links property to an admin
   createdAt: string;
   updatedAt: string;
+}
+
+export type Role = 'superadmin' | 'admin';
+
+export interface User {
+  id: string;
+  email: string;
+  role: Role;
+  name?: string;
+  createdAt: string;
 }
 
 export interface RoomType {
@@ -42,8 +53,8 @@ export interface BookingCalendar {
   dates: Record<string, DateStatus>; // key: YYYY-MM-DD, value: status
 }
 
-export interface AdminUser {
-  password: string;
+export interface AuthUser {
+  user: User | null;
   isAuthenticated: boolean;
 }
 

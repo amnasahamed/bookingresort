@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { 
-  Calendar, 
-  MessageCircle, 
-  Share2, 
-  Zap, 
-  Smartphone, 
+import {
+  Calendar,
+  MessageCircle,
+  Share2,
+  Zap,
+  Smartphone,
   Lock,
   ArrowRight,
   Check,
@@ -16,12 +16,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { checkAdminPassword, setAdminAuthenticated } from '@/lib/storage';
+import { supabase } from '@/lib/supabase';
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [loginError, setLoginError] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
@@ -40,14 +41,34 @@ export default function LandingPage() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const handleAdminLogin = (e: React.FormEvent) => {
+  const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (checkAdminPassword(adminPassword)) {
-      setAdminAuthenticated(true);
+    setLoginError('');
+
+    // Call Supabase to authenticate
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: adminEmail,
+      password: adminPassword,
+    });
+
+    if (error) {
+      setLoginError(error.message);
+      return;
+    }
+
+    // Check role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profile?.role === 'admin' || profile?.role === 'superadmin') {
       setShowAdminLogin(false);
       navigate('/admin');
     } else {
-      setLoginError('Invalid password');
+      await supabase.auth.signOut();
+      setLoginError('Access denied: You do not have Admin privileges.');
     }
   };
 
@@ -58,9 +79,8 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Navigation */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm' : 'bg-transparent'
-      }`}>
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/90 backdrop-blur-md shadow-sm' : 'bg-transparent'
+        }`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-2">
@@ -79,8 +99,8 @@ export default function LandingPage() {
               <button onClick={() => scrollToSection('pricing')} className="text-gray-600 hover:text-gray-900 transition-colors">
                 Pricing
               </button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => setShowAdminLogin(true)}
               >
@@ -97,7 +117,7 @@ export default function LandingPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 via-white to-teal-50" />
         <div className="absolute top-20 right-0 w-96 h-96 bg-emerald-200/30 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-72 h-72 bg-teal-200/30 rounded-full blur-3xl" />
-        
+
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-100 text-emerald-700 rounded-full text-sm font-medium mb-8">
@@ -112,20 +132,20 @@ export default function LandingPage() {
               resorts
             </h1>
             <p className="text-lg sm:text-xl text-gray-600 mb-10 leading-relaxed">
-              Stop typing "Is this date available?" 50 times a day. Turn your photos 
+              Stop typing "Is this date available?" 50 times a day. Turn your photos
               and Google Calendar into a shareable booking page — in 30 seconds.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button 
-                size="lg" 
+              <Button
+                size="lg"
                 className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-8"
                 onClick={() => navigate('/admin')}
               >
                 Create Your Page Free
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="lg"
                 onClick={() => window.open('/p/villa-moonlight', '_blank')}
               >
@@ -334,7 +354,7 @@ export default function LandingPage() {
                 See it in action
               </h2>
               <p className="text-lg text-gray-600 mb-8">
-                This is what your guests see when they click your bio link. A beautiful, 
+                This is what your guests see when they click your bio link. A beautiful,
                 mobile-first experience that converts browsers into bookings.
               </p>
               <div className="space-y-4">
@@ -366,7 +386,7 @@ export default function LandingPage() {
                   </div>
                 </div>
               </div>
-              <Button 
+              <Button
                 className="mt-8 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
                 onClick={() => window.open('/p/villa-moonlight', '_blank')}
               >
@@ -412,7 +432,7 @@ export default function LandingPage() {
               Simple, one-time pricing
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              No monthly fees. No commissions. No payment gateway charges. 
+              No monthly fees. No commissions. No payment gateway charges.
               You keep 100% of your bookings.
             </p>
           </div>
@@ -445,8 +465,8 @@ export default function LandingPage() {
                   <span className="text-gray-600">Basic analytics</span>
                 </li>
               </ul>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full"
                 onClick={() => navigate('/admin')}
               >
@@ -488,7 +508,7 @@ export default function LandingPage() {
                   <span className="text-emerald-50">Custom domain (coming soon)</span>
                 </li>
               </ul>
-              <Button 
+              <Button
                 className="w-full bg-white text-emerald-600 hover:bg-gray-100"
                 onClick={() => navigate('/admin')}
               >
@@ -506,11 +526,11 @@ export default function LandingPage() {
             Ready to stop typing "Is this date available?"
           </h2>
           <p className="text-lg text-emerald-100 mb-10 max-w-2xl mx-auto">
-            Join hundreds of resort owners who've reclaimed their time. 
+            Join hundreds of resort owners who've reclaimed their time.
             Set up your booking page in 30 seconds — free forever for 1 property.
           </p>
-          <Button 
-            size="lg" 
+          <Button
+            size="lg"
             className="bg-white text-emerald-600 hover:bg-gray-100 px-8"
             onClick={() => navigate('/admin')}
           >
@@ -566,6 +586,20 @@ export default function LandingPage() {
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div>
               <label className="text-sm font-medium text-gray-700 mb-1 block">
+                Email
+              </label>
+              <Input
+                type="email"
+                value={adminEmail}
+                onChange={(e) => {
+                  setAdminEmail(e.target.value);
+                  setLoginError('');
+                }}
+                placeholder="admin@example.com"
+                className="w-full mb-4"
+                required
+              />
+              <label className="text-sm font-medium text-gray-700 mb-1 block">
                 Password
               </label>
               <Input
@@ -575,28 +609,26 @@ export default function LandingPage() {
                   setAdminPassword(e.target.value);
                   setLoginError('');
                 }}
-                placeholder="Enter admin password"
+                placeholder="Enter password"
                 className="w-full"
+                required
               />
               {loginError && (
-                <p className="text-sm text-red-500 mt-1">{loginError}</p>
+                <p className="text-sm text-red-500 mt-2">{loginError}</p>
               )}
-              <p className="text-xs text-gray-500 mt-2">
-                Demo password: <code className="bg-gray-100 px-1 py-0.5 rounded">admin123</code>
-              </p>
             </div>
             <div className="flex gap-3">
-              <Button 
-                type="button" 
-                variant="outline" 
+              <Button
+                type="button"
+                variant="outline"
                 className="flex-1"
                 onClick={() => setShowAdminLogin(false)}
               >
                 <X className="w-4 h-4 mr-2" />
                 Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white"
               >
                 <Lock className="w-4 h-4 mr-2" />
