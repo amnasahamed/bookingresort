@@ -40,8 +40,19 @@ export async function inviteAdmin(email: string, name: string, role: 'admin' | '
         body: JSON.stringify({ email, name, role }),
     });
 
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to send invite');
+    let data;
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+        data = await res.json();
+    } else {
+        const text = await res.text();
+        throw new Error(`Server returned non-JSON response (${res.status}): ${text.substring(0, 100)}...`);
+    }
+
+    if (!res.ok) {
+        console.error('Invite admin error:', data);
+        throw new Error(data.error || 'Failed to send invite');
+    }
     return data;
 }
 

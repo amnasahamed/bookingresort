@@ -64,24 +64,40 @@ Deno.serve(async (req: Request) => {
         });
 
         if (inviteError) {
+            console.error('Invitation error:', inviteError.message);
             return new Response(JSON.stringify({ error: inviteError.message }), {
                 status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
 
+        if (!invited?.user) {
+            console.error('Invitation succeeded but no user returned');
+            return new Response(JSON.stringify({ error: 'Failed to create user' }), {
+                status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+
         // Create or update the profile row immediately
-        await supabaseAdmin.from('profiles').upsert({
+        const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
             id: invited.user.id,
             email,
             full_name: name,
             role,
         });
 
+        if (profileError) {
+            console.error('Profile upsert error:', profileError.message);
+            return new Response(JSON.stringify({ error: `User invited but profile creation failed: ${profileError.message}` }), {
+                status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+
         return new Response(JSON.stringify({ success: true, userId: invited.user.id }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
 
     } catch (err: any) {
+        console.error('Unexpected error in function:', err.message);
         return new Response(JSON.stringify({ error: err.message }), {
             status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
