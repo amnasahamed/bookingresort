@@ -33,9 +33,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         initializeAuth();
 
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+            if (!mounted) return;
+
             if (session) {
-                const u = await getCurrentUser();
-                if (mounted) setUser(u);
+                try {
+                    const u = await getCurrentUser();
+                    if (mounted) setUser(u);
+                } catch (e) {
+                    console.error("Auth state change error:", e);
+                    if (mounted) setUser(null);
+                }
             } else {
                 if (mounted) setUser(null);
             }

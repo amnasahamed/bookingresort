@@ -3,16 +3,26 @@ import type { Property, DateStatus, User } from '@/types';
 
 // Auth & Users
 export async function getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    try {
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) return null;
 
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .maybeSingle();
 
-    return profile ? mapUserFromDB(profile) : null;
+        if (profileError) {
+            console.error('Error fetching profile:', profileError);
+            return null;
+        }
+
+        return profile ? mapUserFromDB(profile) : null;
+    } catch (e) {
+        console.error('getCurrentUser caught error:', e);
+        return null;
+    }
 }
 
 export async function getUsers() {
