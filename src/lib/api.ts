@@ -12,13 +12,13 @@ export async function getCurrentUser() {
         .eq('id', user.id)
         .single();
 
-    return profile as User | null;
+    return profile ? mapUserFromDB(profile) : null;
 }
 
 export async function getUsers() {
     const { data, error } = await supabase.from('profiles').select('*');
     if (error) throw error;
-    return data as User[];
+    return data.map(mapUserFromDB) as User[];
 }
 
 export async function signOut() {
@@ -189,5 +189,14 @@ function mapPropertyToDB(prop: any) {
         amenities: prop.amenities,
         images: prop.images,
         videos: prop.videos,
+    };
+}
+function mapUserFromDB(dbUser: any): User {
+    return {
+        id: dbUser.id,
+        email: dbUser.email,
+        role: dbUser.role,
+        name: dbUser.full_name || dbUser.name || 'No Name',
+        createdAt: dbUser.created_at || new Date().toISOString(),
     };
 }

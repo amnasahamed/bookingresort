@@ -177,14 +177,14 @@ export default function SuperadminDashboard() {
                                     <tbody className="divide-y divide-gray-100">
                                         {users.map(user => (
                                             <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
-                                                <td className="px-6 py-4">
+                                                <td className="px-6 py-4 text-gray-900 font-medium">
                                                     <div className="flex items-center gap-3">
                                                         <div className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold text-white ${user.role === 'superadmin' ? 'bg-indigo-500' : 'bg-emerald-500'}`}>
-                                                            {user.name?.charAt(0) || user.email.charAt(0).toUpperCase()}
+                                                            {(user.name && user.name !== 'No Name') ? user.name[0].toUpperCase() : user.email[0].toUpperCase()}
                                                         </div>
                                                         <div>
-                                                            <p className="font-semibold text-gray-900">{user.name || 'No Name'}</p>
-                                                            <p className="text-gray-500 flex items-center gap-1 mt-0.5">
+                                                            <p className="font-semibold text-gray-900">{user.name}</p>
+                                                            <p className="text-gray-500 flex items-center gap-1 mt-0.5 font-normal">
                                                                 <Mail className="w-3 h-3" />
                                                                 {user.email}
                                                             </p>
@@ -200,7 +200,9 @@ export default function SuperadminDashboard() {
                                                     </Badge>
                                                 </td>
                                                 <td className="px-6 py-4 text-gray-500">
-                                                    {new Date(user.createdAt).toLocaleDateString()}
+                                                    {user.createdAt && !isNaN(new Date(user.createdAt).getTime())
+                                                        ? new Date(user.createdAt).toLocaleDateString()
+                                                        : 'N/A'}
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500 hover:text-gray-900">
