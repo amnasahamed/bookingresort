@@ -36,19 +36,41 @@ export async function signOut() {
 }
 
 export async function inviteAdmin(email: string, name: string, role: 'admin' | 'superadmin' = 'admin') {
-    // Get the current session token to pass to the edge function
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) throw new Error('Not authenticated');
-
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-admin`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-        },
-        body: JSON.stringify({ email, name, role }),
+    // Prevent indefinite hanging from Supabase session locks
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise<{ data: { session: any }, error: any }>((_, reject) => {
+        setTimeout(() => reject(new Error('Session fetch timed out. Please refresh the page.')), 5000);
     });
+
+    const { data: { session }, error: sessionError } = await Promise.race([sessionPromise, timeoutPromise]);
+
+    if (sessionError || !session) {
+        throw new Error('Not authenticated properly or session expired. Please refresh the page and try again.');
+    }
+
+    const controller = new AbortController();
+    const fetchTimeoutId = setTimeout(() => controller.abort(), 10000);
+
+    let res;
+    try {
+        res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-admin`, {
+            method: 'POST',
+            signal: controller.signal,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session.access_token}`,
+                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+            },
+            body: JSON.stringify({ email, name, role }),
+        });
+    } catch (err: any) {
+        if (err.name === 'AbortError') {
+            throw new Error('Supabase request timed out after 10 seconds. Check logs or retry.');
+        }
+        throw err;
+    } finally {
+        clearTimeout(fetchTimeoutId);
+    }
 
     let data;
     const contentType = res.headers.get('content-type');
