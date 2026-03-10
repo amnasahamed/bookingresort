@@ -31,20 +31,29 @@ Deno.serve(async (req: Request) => {
         const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
         if (authError || !caller) {
-            return new Response(JSON.stringify({ error: 'Invalid session' }), {
+            console.error('Auth verification failed:', authError?.message || 'No user found for token');
+            return new Response(JSON.stringify({
+                error: 'Unauthorized: Invalid JWT or Session Expired',
+                details: authError?.message
+            }), {
                 status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
 
         // Check caller is a superadmin
-        const { data: callerProfile } = await supabaseAdmin
+        const { data: callerProfile, error: profileError } = await supabaseAdmin
             .from('profiles')
             .select('role')
             .eq('id', caller.id)
             .single();
 
-        if (callerProfile?.role !== 'superadmin') {
-            return new Response(JSON.stringify({ error: 'Forbidden: Superadmin only' }), {
+        if (profileError || callerProfile?.role !== 'superadmin') {
+            const msg = profileError ? profileError.message : 'User is not a superadmin';
+            console.error('Superadmin check failed:', msg);
+            return new Response(JSON.stringify({
+                error: 'Forbidden: Superadmin privileges required',
+                details: msg
+            }), {
                 status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
