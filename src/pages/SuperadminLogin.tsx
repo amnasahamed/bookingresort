@@ -52,16 +52,18 @@ export default function SuperadminLogin() {
                     .maybeSingle();  // Use maybeSingle instead of single to avoid 406 error
                 profile = result.data;
                 profileError = result.error;
-                console.log('Profile result:', { profile, profileError });
+                console.log('[v0] Profile query result:', { profile, profileError, userId: user.id });
             } catch (e: any) {
                 profileError = e;
-                console.error('Profile fetch exception:', e);
+                console.error('[v0] Profile fetch exception:', e);
             }
 
             if (profileError) {
                 console.error('Profile fetch error:', profileError);
                 await supabase.auth.signOut();
-                setError(`Error loading user profile: ${profileError.message || 'Unknown error'}. Please contact support.`);
+                const errorDetails = profileError.message || profileError.code || 'Unknown error';
+                const fullErrorMsg = profileError.details ? `${profileError.message} (${profileError.details})` : profileError.message;
+                setError(`Database error querying schema: ${fullErrorMsg || errorDetails}. Please try again or contact support.`);
                 return;
             }
 
