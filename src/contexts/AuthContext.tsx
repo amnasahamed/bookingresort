@@ -35,7 +35,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 id: userData.id,
                 email: userData.email,
                 role: userData.role,
-                full_name: userData.full_name
+                name: userData.full_name || userData.name,
+                createdAt: userData.createdAt || new Date().toISOString()
             };
         } catch (e) {
             console.error('[v0] Failed to parse auth_user:', e);
