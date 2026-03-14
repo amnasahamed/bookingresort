@@ -27,16 +27,20 @@ export default function SuperadminLogin() {
                 return;
             }
 
-            if (!data.user) {
+            if (!data.session?.user) {
                 setError('Authentication failed. Please try again.');
                 return;
             }
 
+            // Wait a moment for auth state to settle and locks to release
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             // Verify they are a superadmin
+            const user = data.session.user;
             const { data: profile, error: profileError } = await supabase
                 .from('profiles')
                 .select('role')
-                .eq('id', data.user.id)
+                .eq('id', user.id)
                 .single();
 
             if (profileError) {

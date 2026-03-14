@@ -4,12 +4,20 @@ import type { Property, DateStatus, User } from '@/types';
 // Auth & Users
 export async function getCurrentUser() {
     try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError) {
-            console.error('Auth user error:', userError.message);
+        // Use getSession instead of getUser to avoid lock contention
+        // getSession is cached and doesn't hit the lock as aggressively
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+            console.error('Auth session error:', sessionError.message);
             return null;
         }
-        if (!user) return null;
+        if (!session?.user) return null;
+
+        const user = session.user;
+
+        // Small delay to let auth lock release before DB query
+        await new Promise(resolve => setTimeout(resolve, 10));
 
         const { data: profile, error: profileError } = await supabase
             .from('profiles')

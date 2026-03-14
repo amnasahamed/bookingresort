@@ -57,16 +57,20 @@ export default function LandingPage() {
         return;
       }
 
-      if (!data.user) {
+      if (!data.session?.user) {
         setLoginError('Authentication failed. Please try again.');
         return;
       }
 
-      // Check role
+      // Wait a moment for auth state to settle and locks to release
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Check role using the user from the session
+      const user = data.session.user;
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('role')
-        .eq('id', data.user.id)
+        .eq('id', user.id)
         .single();
 
       if (profileError) {
