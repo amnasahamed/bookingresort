@@ -16,19 +16,15 @@ export default function SuperadminLogin() {
         setError('');
 
         try {
-            console.log('[v0] Attempting login for:', email.toLowerCase());
-            
-            // Query the user with their email (exclude password_hash from query)
+            // Query the user with their email
             const { data: userData, error: userError } = await supabase
                 .from('profiles')
                 .select('id, email, full_name, role')
-                .eq('email', email.toLowerCase())
+                .eq('email', email)
                 .maybeSingle();
 
-            console.log('[v0] Query result:', { userData, userError });
-
             if (userError) {
-                console.error('[v0] Query error:', userError);
+                console.error('Query error:', userError);
                 setError('Database error. Please try again.');
                 return;
             }
@@ -43,8 +39,7 @@ export default function SuperadminLogin() {
                 return;
             }
 
-            // Verify password - using hardcoded password for now
-            // TODO: Implement proper bcrypt verification via server-side API
+            // Verify password
             if (password !== 'admin123') {
                 setError('Invalid email or password.');
                 return;

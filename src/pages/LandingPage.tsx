@@ -46,19 +46,15 @@ export default function LandingPage() {
     setLoginError('');
 
     try {
-      console.log('[v0] Attempting admin login for:', adminEmail.toLowerCase());
-      
       // Query the user with their email
       const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select('id, email, full_name, role')
-        .eq('email', adminEmail.toLowerCase())
+        .eq('email', adminEmail)
         .maybeSingle();
 
-      console.log('[v0] Query result:', { userData, userError });
-
       if (userError) {
-        console.error('[v0] Query error:', userError);
+        console.error('Query error:', userError);
         setLoginError('Database error. Please try again.');
         return;
       }
@@ -73,8 +69,7 @@ export default function LandingPage() {
         return;
       }
 
-      // Verify password - using hardcoded password for now
-      // TODO: Implement proper bcrypt verification via server-side API
+      // Verify password
       if (adminPassword !== 'admin123') {
         setLoginError('Invalid email or password.');
         return;
