@@ -32,7 +32,7 @@ CREATE POLICY "Service role can manage all profiles"
   USING (true)
   WITH CHECK (true);
 
--- Create a function to handle new user signups
+-- Create a function to handle new user signups (with conflict handling)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -43,11 +43,7 @@ BEGIN
     COALESCE(NEW.raw_user_meta_data->>'full_name', NEW.email),
     COALESCE(NEW.raw_user_meta_data->>'role', 'admin')
   )
-  ON CONFLICT (id) DO UPDATE
-  SET
-    email = EXCLUDED.email,
-    full_name = COALESCE(EXCLUDED.full_name, profiles.full_name),
-    role = COALESCE(EXCLUDED.role, profiles.role);
+  ON CONFLICT (id) DO NOTHING;  -- If profile already exists (e.g., from edge function), skip
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
