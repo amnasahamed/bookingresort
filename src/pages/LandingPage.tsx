@@ -46,14 +46,24 @@ export default function LandingPage() {
     setLoginError('');
 
     try {
-      // Query the user with their email and password hash
+      console.log('[v0] Attempting admin login for:', adminEmail.toLowerCase());
+      
+      // Query the user with their email
       const { data: userData, error: userError } = await supabase
         .from('profiles')
-        .select('id, email, full_name, role, password_hash')
+        .select('id, email, full_name, role')
         .eq('email', adminEmail.toLowerCase())
         .maybeSingle();
 
-      if (userError || !userData) {
+      console.log('[v0] Query result:', { userData, userError });
+
+      if (userError) {
+        console.error('[v0] Query error:', userError);
+        setLoginError('Database error. Please try again.');
+        return;
+      }
+      
+      if (!userData) {
         setLoginError('Invalid email or password.');
         return;
       }
@@ -63,12 +73,9 @@ export default function LandingPage() {
         return;
       }
 
-      // Verify password - in production this should use a server-side API
-      const validPassword = userData.password_hash 
-        ? adminPassword === 'admin123' // TODO: Implement proper bcrypt verification via API
-        : adminPassword === 'admin123';
-      
-      if (!validPassword) {
+      // Verify password - using hardcoded password for now
+      // TODO: Implement proper bcrypt verification via server-side API
+      if (adminPassword !== 'admin123') {
         setLoginError('Invalid email or password.');
         return;
       }

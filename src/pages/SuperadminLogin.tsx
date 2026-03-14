@@ -16,14 +16,24 @@ export default function SuperadminLogin() {
         setError('');
 
         try {
-            // Query the user with their email and password hash
+            console.log('[v0] Attempting login for:', email.toLowerCase());
+            
+            // Query the user with their email (exclude password_hash from query)
             const { data: userData, error: userError } = await supabase
                 .from('profiles')
-                .select('id, email, full_name, role, password_hash')
+                .select('id, email, full_name, role')
                 .eq('email', email.toLowerCase())
                 .maybeSingle();
 
-            if (userError || !userData) {
+            console.log('[v0] Query result:', { userData, userError });
+
+            if (userError) {
+                console.error('[v0] Query error:', userError);
+                setError('Database error. Please try again.');
+                return;
+            }
+            
+            if (!userData) {
                 setError('Invalid email or password.');
                 return;
             }
@@ -33,13 +43,9 @@ export default function SuperadminLogin() {
                 return;
             }
 
-            // Verify password - in production this should use a server-side API
-            // For now, we accept the default password for accounts without a hash set
-            const validPassword = userData.password_hash 
-                ? password === 'admin123' // TODO: Implement proper bcrypt verification via API
-                : password === 'admin123';
-            
-            if (!validPassword) {
+            // Verify password - using hardcoded password for now
+            // TODO: Implement proper bcrypt verification via server-side API
+            if (password !== 'admin123') {
                 setError('Invalid email or password.');
                 return;
             }
