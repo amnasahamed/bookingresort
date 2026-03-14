@@ -72,6 +72,8 @@ export default function AdminDashboard() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [calendarData, setCalendarData] = useState<Record<number, DateStatus>>({});
   const [activeTab, setActiveTab] = useState('calendar');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Form states
   const [propertyName, setPropertyName] = useState('');
@@ -109,13 +111,22 @@ export default function AdminDashboard() {
 
   const loadProperties = async () => {
     try {
+      setIsLoading(true);
+      setError(null);
       const props = await getProperties();
-      setProperties(props);
-      if (props.length > 0 && !selectedPropertyId) {
-        setSelectedPropertyId(props[0].id);
+      // Filter properties for the current admin (unless superadmin)
+      const filteredProps = user?.role === 'superadmin' 
+        ? props 
+        : props.filter(p => p.adminId === user?.id);
+      setProperties(filteredProps);
+      if (filteredProps.length > 0 && !selectedPropertyId) {
+        setSelectedPropertyId(filteredProps[0].id);
       }
-    } catch (error) {
-      console.error('Error loading properties:', error);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load properties';
+      setError(message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -128,8 +139,8 @@ export default function AdminDashboard() {
         currentMonth.getMonth()
       );
       setCalendarData(data);
-    } catch (error) {
-      console.error('Error loading calendar:', error);
+    } catch {
+      // Silent fail - calendar will show all dates as open
     }
   };
 

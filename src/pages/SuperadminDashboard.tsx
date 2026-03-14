@@ -34,8 +34,8 @@ export default function SuperadminDashboard() {
             const [u, p] = await Promise.all([getUsers(), getProperties()]);
             setUsers(u);
             setProperties(p);
-        } catch (error) {
-            console.error("Failed to load data", error);
+        } catch {
+            // Silent fail - data will remain empty
         }
     };
 

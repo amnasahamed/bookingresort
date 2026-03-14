@@ -22,8 +22,7 @@ export async function getCurrentUser() {
             name: userData.full_name || userData.name,
             createdAt: userData.createdAt || new Date().toISOString()
         };
-    } catch (e) {
-        console.error('[v0] getCurrentUser error:', e);
+    } catch {
         return null;
     }
 }
@@ -35,9 +34,8 @@ export async function getUsers() {
 }
 
 export async function signOut() {
-    // Clear localStorage session
     localStorage.removeItem('auth_user');
-    console.log('[v0] User signed out');
+    window.dispatchEvent(new Event('auth-changed'));
 }
 
 export async function inviteAdmin(email: string, name: string, role: 'admin' | 'superadmin' = 'admin') {

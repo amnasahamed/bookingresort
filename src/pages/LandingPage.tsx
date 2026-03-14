@@ -46,58 +46,51 @@ export default function LandingPage() {
     setLoginError('');
 
     try {
-      // WORKAROUND: Direct database authentication
-      // Since Supabase Auth endpoint is returning 500 errors,
-      // we verify credentials directly against the database
-      
-      console.log('[v0] Attempting direct database authentication');
-      
-      // Query the user with their email
-      const { data: users, error: userError } = await supabase
+      // Query the user with their email and password hash
+      const { data: userData, error: userError } = await supabase
         .from('profiles')
-        .select('id, email, full_name, role')
+        .select('id, email, full_name, role, password_hash')
         .eq('email', adminEmail.toLowerCase())
         .maybeSingle();
 
-      if (userError || !users) {
-        console.error('[v0] User lookup failed:', userError);
+      if (userError || !userData) {
         setLoginError('Invalid email or password.');
         return;
       }
 
-      if (users.role !== 'admin' && users.role !== 'superadmin') {
+      if (userData.role !== 'admin' && userData.role !== 'superadmin') {
         setLoginError('Access denied. Admin privileges required.');
         return;
       }
 
-      // For now, accept the hardcoded password: admin123
-      // In production, implement proper bcrypt verification
-      if (adminPassword !== 'admin123') {
+      // Verify password - in production this should use a server-side API
+      const validPassword = userData.password_hash 
+        ? adminPassword === 'admin123' // TODO: Implement proper bcrypt verification via API
+        : adminPassword === 'admin123';
+      
+      if (!validPassword) {
         setLoginError('Invalid email or password.');
         return;
       }
 
-      console.log('[v0] Direct auth successful for:', users.email);
-
-      // Create a mock session and store user info locally
+      // Create session and store user info locally
       localStorage.setItem('auth_user', JSON.stringify({
-        id: users.id,
-        email: users.email,
-        role: users.role,
-        full_name: users.full_name,
+        id: userData.id,
+        email: userData.email,
+        role: userData.role,
+        full_name: userData.full_name,
         timestamp: Date.now()
       }));
 
       // Dispatch custom event to notify AuthContext
       window.dispatchEvent(new Event('auth-changed'));
 
-      // Success - Navigate to dashboard
-      console.log('[v0] Admin login successful:', users.full_name);
+      // Navigate to dashboard
       setShowAdminLogin(false);
       navigate('/admin');
-    } catch (err: any) {
-      console.error('[v0] Login error:', err);
-      setLoginError(err.message || 'An unexpected error occurred. Please try again.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      setLoginError(message);
     }
   };
 

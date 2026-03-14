@@ -58,8 +58,8 @@ export default function PropertyPage() {
           if (prop) {
             setProperty(prop);
           }
-        } catch (error) {
-          console.error("Failed to load property:", error);
+        } catch {
+          // Property not found - handled in render
         } finally {
           setLoading(false);
         }
@@ -119,8 +119,8 @@ export default function PropertyPage() {
         currentMonth.getMonth()
       );
       setCalendarData(data);
-    } catch (error) {
-      console.error("Failed to load calendar", error);
+    } catch {
+      // Calendar will show all dates as open on error
     }
   };
 

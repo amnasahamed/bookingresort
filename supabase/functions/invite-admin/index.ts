@@ -90,16 +90,16 @@ Deno.serve(async (req: Request) => {
         }
 
         // Create or update the profile row immediately
-        const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
+        const { error: profileUpsertError } = await supabaseAdmin.from('profiles').upsert({
             id: invited.user.id,
             email,
             full_name: name,
             role,
         });
 
-        if (profileError) {
-            console.error('Profile upsert error:', profileError.message);
-            return new Response(JSON.stringify({ error: `User invited but profile creation failed: ${profileError.message}` }), {
+        if (profileUpsertError) {
+            console.error('Profile upsert error:', profileUpsertError.message);
+            return new Response(JSON.stringify({ error: `User invited but profile creation failed: ${profileUpsertError.message}` }), {
                 status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
