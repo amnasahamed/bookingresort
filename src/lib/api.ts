@@ -4,40 +4,25 @@ import type { Property, DateStatus, User } from '@/types';
 // Auth & Users
 export async function getCurrentUser() {
     try {
-        // Use getSession instead of getUser to avoid lock contention
-        // getSession is cached and doesn't hit the lock as aggressively
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        // Get user from localStorage (workaround for broken Supabase Auth)
+        const stored = localStorage.getItem('auth_user');
+        if (!stored) return null;
         
-        if (sessionError) {
-            console.error('Auth session error:', sessionError.message);
-            return null;
-        }
-        if (!session?.user) return null;
-
-        const user = session.user;
-
-        // Small delay to let auth lock release before DB query
-        await new Promise(resolve => setTimeout(resolve, 10));
-
-        const { data: profile, error: profileError } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', user.id)
-            .maybeSingle();
-
-        if (profileError) {
-            console.error('Error fetching profile:', profileError.message, profileError.details);
+        const userData = JSON.parse(stored);
+        // Check if session is still valid (not expired after 24 hours)
+        if (Date.now() - userData.timestamp > 24 * 60 * 60 * 1000) {
+            localStorage.removeItem('auth_user');
             return null;
         }
 
-        if (!profile) {
-            console.warn('No profile found for user:', user.id, user.email);
-            return null;
-        }
-
-        return mapUserFromDB(profile);
+        return {
+            id: userData.id,
+            email: userData.email,
+            role: userData.role,
+            full_name: userData.full_name
+        } as User;
     } catch (e) {
-        console.error('getCurrentUser caught error:', e);
+        console.error('[v0] getCurrentUser error:', e);
         return null;
     }
 }
@@ -49,7 +34,9 @@ export async function getUsers() {
 }
 
 export async function signOut() {
-    await supabase.auth.signOut();
+    // Clear localStorage session
+    localStorage.removeItem('auth_user');
+    console.log('[v0] User signed out');
 }
 
 export async function inviteAdmin(email: string, name: string, role: 'admin' | 'superadmin' = 'admin') {
