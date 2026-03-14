@@ -310,10 +310,10 @@ export default function AdminDashboard() {
   const toggleDateStatus = (day: number) => {
     if (!selectedPropertyId) return;
     const dateStr = format(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day), 'yyyy-MM-dd');
-    const currentStatus = calendarData[day] || 'open';
+    const currentStatus = calendarData[day] || 'available';
     const newStatus: DateStatus =
-      currentStatus === 'open' ? 'booked' :
-        currentStatus === 'booked' ? 'hold' : 'open';
+      currentStatus === 'available' ? 'booked' :
+        currentStatus === 'booked' ? 'blocked' : 'available';
 
     setDateStatus(selectedPropertyId, dateStr, newStatus);
     setCalendarData({ ...calendarData, [day]: newStatus });
@@ -321,8 +321,8 @@ export default function AdminDashboard() {
 
   const getStatusColor = (status: DateStatus) => {
     switch (status) {
-      case 'open': return 'bg-emerald-500 hover:bg-emerald-600';
-      case 'hold': return 'bg-yellow-500 hover:bg-yellow-600';
+      case 'available': return 'bg-emerald-500 hover:bg-emerald-600';
+      case 'blocked': return 'bg-yellow-500 hover:bg-yellow-600';
       case 'booked': return 'bg-red-500 hover:bg-red-600';
     }
   };
@@ -572,7 +572,7 @@ export default function AdminDashboard() {
                         ))}
                         {daysInMonth.map((day) => {
                           const dayNum = day.getDate();
-                          const status = calendarData[dayNum] || 'open';
+                          const status = calendarData[dayNum] || 'available';
                           return (
                             <button
                               key={dayNum}
@@ -581,7 +581,7 @@ export default function AdminDashboard() {
                             >
                               <span className="text-lg font-semibold">{dayNum}</span>
                               <span className="text-xs opacity-80">
-                                {status === 'open' ? 'Open' : status === 'hold' ? 'Hold' : 'Booked'}
+                                {status === 'available' ? 'Open' : status === 'blocked' ? 'Blocked' : 'Booked'}
                               </span>
                             </button>
                           );

@@ -154,7 +154,7 @@ export default function PropertyPage() {
   };
 
   const handleDateClick = (day: number) => {
-    const status = calendarData[day] || 'open';
+    const status = calendarData[day] || 'available';
     if (status === 'booked') return;
     const clickedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
     if (!selectedDates.checkIn || (selectedDates.checkIn && selectedDates.checkOut)) {
@@ -373,7 +373,7 @@ export default function PropertyPage() {
             ))}
             {daysInMonth.map((day) => {
               const dayNum = day.getDate();
-              const status = calendarData[dayNum] || 'open';
+              const status = calendarData[dayNum] || 'available';
               const isSelected = isDateSelected(dayNum);
               const inRange = isDateInRange(dayNum);
               return (
@@ -383,8 +383,8 @@ export default function PropertyPage() {
                   disabled={status === 'booked'}
                   className={`aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition-all
                     ${status === 'booked' ? 'bg-red-100 text-red-400 cursor-not-allowed' : ''}
-                    ${status === 'hold' ? 'bg-yellow-100 text-yellow-700' : ''}
-                    ${status === 'open' && !isSelected ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : ''}
+                    ${status === 'blocked' ? 'bg-yellow-100 text-yellow-700' : ''}
+                    ${status === 'available' && !isSelected ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : ''}
                     ${isSelected ? 'bg-emerald-500 text-white ring-2 ring-emerald-500 ring-offset-2' : ''}
                     ${inRange ? 'bg-emerald-200 text-emerald-800' : ''}`}
                 >
@@ -569,7 +569,7 @@ export default function PropertyPage() {
                   ))}
                   {daysInMonth.map((day) => {
                     const dayNum = day.getDate();
-                    const status = calendarData[dayNum] || 'open';
+                    const status = calendarData[dayNum] || 'available';
                     const isSelected = isDateSelected(dayNum);
                     const inRange = isDateInRange(dayNum);
                     return (
@@ -579,8 +579,8 @@ export default function PropertyPage() {
                         disabled={status === 'booked'}
                         className={`aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition-all
                           ${status === 'booked' ? 'bg-red-100 text-red-400 cursor-not-allowed' : ''}
-                          ${status === 'hold' ? 'bg-yellow-100 text-yellow-700' : ''}
-                          ${status === 'open' && !isSelected ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : ''}
+                          ${status === 'blocked' ? 'bg-yellow-100 text-yellow-700' : ''}
+                          ${status === 'available' && !isSelected ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : ''}
                           ${isSelected ? 'bg-emerald-500 text-white ring-2 ring-emerald-500 ring-offset-2' : ''}
                           ${inRange ? 'bg-emerald-200 text-emerald-800' : ''}`}
                       >

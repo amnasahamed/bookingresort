@@ -116,7 +116,7 @@ export function setDateStatus(propertyId: string, date: string, status: DateStat
 
 export function getDateStatus(propertyId: string, date: string): DateStatus {
   const calendar = getCalendar(propertyId);
-  return calendar.dates[date] || 'open';
+  return calendar.dates[date] || 'available';
 }
 
 export function getMonthCalendar(propertyId: string, year: number, month: number): Record<number, DateStatus> {
@@ -126,7 +126,7 @@ export function getMonthCalendar(propertyId: string, year: number, month: number
 
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    result[day] = calendar.dates[dateStr] || 'open';
+    result[day] = calendar.dates[dateStr] || 'available';
   }
 
   return result;
