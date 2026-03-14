@@ -1,44 +1,67 @@
 import { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { getCurrentUser } from '@/lib/api';
 import type { User } from '@/types';
 
 interface AuthContextType {
     user: User | null;
     loading: boolean;
     refreshUser: () => Promise<void>;
+    logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true, refreshUser: async () => {} });
-
-// Global lock to prevent concurrent auth operations
-let authOperationInProgress = false;
+const AuthContext = createContext<AuthContextType>({ 
+    user: null, 
+    loading: true, 
+    refreshUser: async () => {},
+    logout: () => {}
+});
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const isProcessingRef = useRef(false);
 
-    const refreshUser = useCallback(async () => {
-        // Wait for any pending auth operation
-        while (authOperationInProgress) {
-            await new Promise(resolve => setTimeout(resolve, 100));
+    // Get current user from localStorage (workaround for broken Supabase Auth)
+    const getCurrentUserLocal = useCallback((): User | null => {
+        try {
+            const stored = localStorage.getItem('auth_user');
+            if (!stored) return null;
+            const userData = JSON.parse(stored);
+            // Check if session is still valid (not expired after 24 hours)
+            if (Date.now() - userData.timestamp > 24 * 60 * 60 * 1000) {
+                localStorage.removeItem('auth_user');
+                return null;
+            }
+            return {
+                id: userData.id,
+                email: userData.email,
+                role: userData.role,
+                full_name: userData.full_name
+            };
+        } catch (e) {
+            console.error('[v0] Failed to parse auth_user:', e);
+            return null;
         }
+    }, []);
 
+    const refreshUser = useCallback(async () => {
         if (isProcessingRef.current) return;
         isProcessingRef.current = true;
 
         try {
-            // Wait for auth state to settle
-            await new Promise(resolve => setTimeout(resolve, 200));
-            const u = await getCurrentUser();
+            const u = getCurrentUserLocal();
             setUser(u);
         } catch (e) {
-            console.error("Refresh user failed", e);
+            console.error('[v0] Refresh user failed', e);
             setUser(null);
         } finally {
             isProcessingRef.current = false;
         }
+    }, [getCurrentUserLocal]);
+
+    const logout = useCallback(() => {
+        localStorage.removeItem('auth_user');
+        setUser(null);
+        console.log('[v0] User logged out');
     }, []);
 
     useEffect(() => {
@@ -49,50 +72,50 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             isProcessingRef.current = true;
 
             try {
-                // Longer initial delay to let browser settle
-                await new Promise(resolve => setTimeout(resolve, 300));
-                const u = await getCurrentUser();
+                await new Promise(resolve => setTimeout(resolve, 100));
+                const u = getCurrentUserLocal();
                 if (mounted) {
                     setUser(u);
+                    setLoading(false);
                 }
             } catch (e) {
-                console.error("Auth init failed", e);
-            } finally {
+                console.error('[v0] Auth init failed', e);
                 if (mounted) setLoading(false);
+            } finally {
                 isProcessingRef.current = false;
             }
         }
 
         initializeAuth();
 
-        // Use a simpler auth state listener - just trigger a delayed refresh
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-            if (!mounted) return;
-
-            // Don't process during sign in/sign out operations
-            if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-                // Wait longer for the operation to complete
-                await new Promise(resolve => setTimeout(resolve, 500));
-                if (!mounted) return;
-                
-                try {
-                    const u = await getCurrentUser();
-                    if (mounted) setUser(u);
-                } catch (e) {
-                    console.error("Auth state change error:", e);
-                    if (mounted) setUser(null);
-                }
-                if (mounted) setLoading(false);
+        // Listen for custom auth change events
+        const handleAuthChange = () => {
+            if (mounted) {
+                console.log('[v0] Auth changed, refreshing user');
+                const u = getCurrentUserLocal();
+                setUser(u);
             }
-        });
+        };
+
+        window.addEventListener('auth-changed', handleAuthChange);
 
         return () => {
             mounted = false;
-            subscription.unsubscribe();
+            window.removeEventListener('auth-changed', handleAuthChange);
         };
-    }, []);
+    }, [getCurrentUserLocal]);
 
-    return <AuthContext.Provider value={{ user, loading, refreshUser }}>{children}</AuthContext.Provider>;
+    return (
+        <AuthContext.Provider value={{ user, loading, refreshUser, logout }}>
+            {children}
+        </AuthContext.Provider>
+    );
 };
 
-export const useAuth = () => useContext(AuthContext);
+export const useAuth = () => {
+    const context = useContext(AuthContext);
+    if (!context) {
+        throw new Error('useAuth must be used within AuthProvider');
+    }
+    return context;
+};

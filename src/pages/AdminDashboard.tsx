@@ -29,17 +29,6 @@ import {
   Tv,
   Shirt
 } from 'lucide-react';
-
-export const AMENITIES_LIST = [
-  { id: 'wifi', label: 'Wi-Fi', icon: Wifi },
-  { id: 'pool', label: 'Swimming Pool', icon: Waves },
-  { id: 'ac', label: 'Air Conditioning', icon: Wind },
-  { id: 'parking', label: 'Free Parking', icon: Car },
-  { id: 'balcony', label: 'Balcony/Terrace', icon: Trees },
-  { id: 'kitchen', label: 'Kitchen', icon: Utensils },
-  { id: 'tv', label: 'TV', icon: Tv },
-  { id: 'washer', label: 'Washer', icon: Shirt }
-];
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -60,6 +49,17 @@ import {
 } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, addMonths, subMonths } from 'date-fns';
+
+export const AMENITIES_LIST = [
+  { id: 'wifi', label: 'Wi-Fi', icon: Wifi },
+  { id: 'pool', label: 'Swimming Pool', icon: Waves },
+  { id: 'ac', label: 'Air Conditioning', icon: Wind },
+  { id: 'parking', label: 'Free Parking', icon: Car },
+  { id: 'balcony', label: 'Balcony/Terrace', icon: Trees },
+  { id: 'kitchen', label: 'Kitchen', icon: Utensils },
+  { id: 'tv', label: 'TV', icon: Tv },
+  { id: 'washer', label: 'Washer', icon: Shirt }
+];
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
