@@ -16,7 +16,7 @@ export default function SuperadminLogin() {
         setError('');
 
         try {
-            // Call Supabase to authenticate
+            // Step 1: Sign in
             const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password,
@@ -32,16 +32,25 @@ export default function SuperadminLogin() {
                 return;
             }
 
-            // Wait a moment for auth state to settle and locks to release
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Step 2: Wait for auth token lock to fully release
+            await new Promise(resolve => setTimeout(resolve, 500));
 
-            // Verify they are a superadmin
+            // Step 3: Verify they are a superadmin
             const user = data.session.user;
-            const { data: profile, error: profileError } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', user.id)
-                .single();
+            let profile = null;
+            let profileError = null;
+            
+            try {
+                const result = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', user.id)
+                    .single();
+                profile = result.data;
+                profileError = result.error;
+            } catch (e: any) {
+                profileError = e;
+            }
 
             if (profileError) {
                 console.error('Profile fetch error:', profileError);
