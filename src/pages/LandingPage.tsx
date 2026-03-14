@@ -45,30 +45,47 @@ export default function LandingPage() {
     e.preventDefault();
     setLoginError('');
 
-    // Call Supabase to authenticate
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: adminEmail,
-      password: adminPassword,
-    });
+    try {
+      // Call Supabase to authenticate
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: adminEmail,
+        password: adminPassword,
+      });
 
-    if (error) {
-      setLoginError(error.message);
-      return;
-    }
+      if (error) {
+        setLoginError(error.message);
+        return;
+      }
 
-    // Check role
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', data.user.id)
-      .single();
+      if (!data.user) {
+        setLoginError('Authentication failed. Please try again.');
+        return;
+      }
 
-    if (profile?.role === 'admin' || profile?.role === 'superadmin') {
-      setShowAdminLogin(false);
-      navigate('/admin');
-    } else {
-      await supabase.auth.signOut();
-      setLoginError('Access denied: You do not have Admin privileges.');
+      // Check role
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', data.user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        await supabase.auth.signOut();
+        setLoginError('Error loading user profile. Please contact support.');
+        return;
+      }
+
+      if (profile?.role === 'admin' || profile?.role === 'superadmin') {
+        setShowAdminLogin(false);
+        navigate('/admin');
+      } else {
+        await supabase.auth.signOut();
+        setLoginError(`Access denied: Your account role is "${profile?.role || 'unknown'}". Admin privileges required.`);
+      }
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setLoginError(err.message || 'An unexpected error occurred. Please try again.');
     }
   };
 

@@ -15,30 +15,47 @@ export default function SuperadminLogin() {
         e.preventDefault();
         setError('');
 
-        // Call Supabase to authenticate
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
+        try {
+            // Call Supabase to authenticate
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
 
-        if (error) {
-            setError(error.message);
-            return;
-        }
+            if (error) {
+                setError(error.message);
+                return;
+            }
 
-        // Verify they are a superadmin
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', data.user.id)
-            .single();
+            if (!data.user) {
+                setError('Authentication failed. Please try again.');
+                return;
+            }
 
-        if (profile?.role === 'superadmin') {
-            navigate('/superadmin');
-        } else {
-            // If not superadmin, log them out and show error
-            await supabase.auth.signOut();
-            setError('Access denied: You do not have Superadmin privileges.');
+            // Verify they are a superadmin
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', data.user.id)
+                .single();
+
+            if (profileError) {
+                console.error('Profile fetch error:', profileError);
+                await supabase.auth.signOut();
+                setError('Error loading user profile. Please contact support.');
+                return;
+            }
+
+            if (profile?.role === 'superadmin') {
+                navigate('/superadmin');
+            } else {
+                // If not superadmin, log them out and show error
+                await supabase.auth.signOut();
+                setError(`Access denied: Your account role is "${profile?.role || 'unknown'}". Superadmin privileges required.`);
+            }
+        } catch (err: any) {
+            console.error('Login error:', err);
+            setError(err.message || 'An unexpected error occurred. Please try again.');
         }
     };
 

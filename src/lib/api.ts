@@ -5,7 +5,11 @@ import type { Property, DateStatus, User } from '@/types';
 export async function getCurrentUser() {
     try {
         const { data: { user }, error: userError } = await supabase.auth.getUser();
-        if (userError || !user) return null;
+        if (userError) {
+            console.error('Auth user error:', userError.message);
+            return null;
+        }
+        if (!user) return null;
 
         const { data: profile, error: profileError } = await supabase
             .from('profiles')
@@ -14,11 +18,16 @@ export async function getCurrentUser() {
             .maybeSingle();
 
         if (profileError) {
-            console.error('Error fetching profile:', profileError);
+            console.error('Error fetching profile:', profileError.message, profileError.details);
             return null;
         }
 
-        return profile ? mapUserFromDB(profile) : null;
+        if (!profile) {
+            console.warn('No profile found for user:', user.id, user.email);
+            return null;
+        }
+
+        return mapUserFromDB(profile);
     } catch (e) {
         console.error('getCurrentUser caught error:', e);
         return null;
