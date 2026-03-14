@@ -19,8 +19,9 @@ export async function getCurrentUser() {
             id: userData.id,
             email: userData.email,
             role: userData.role,
-            full_name: userData.full_name
-        } as User;
+            name: userData.full_name || userData.name,
+            createdAt: userData.createdAt || new Date().toISOString()
+        };
     } catch (e) {
         console.error('[v0] getCurrentUser error:', e);
         return null;
