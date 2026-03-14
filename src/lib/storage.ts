@@ -10,30 +10,33 @@ const STORAGE_KEYS = {
   USERS: 'bookpage_users',
 };
 
-// Initialize with demo data if empty
+// Initialize storage - no demo data in production
 export function initializeStorage(): void {
-  if (!localStorage.getItem(STORAGE_KEYS.PROPERTIES)) {
-    localStorage.setItem(STORAGE_KEYS.PROPERTIES, JSON.stringify(DEMO_PROPERTIES));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.CALENDARS)) {
-    const defaultCalendar: Record<string, BookingCalendar> = {};
-    DEMO_PROPERTIES.forEach(prop => {
-      defaultCalendar[prop.id] = { propertyId: prop.id, dates: {} };
-    });
-    localStorage.setItem(STORAGE_KEYS.CALENDARS, JSON.stringify(defaultCalendar));
-  }
-  if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
-    // Default superadmin user
-    const defaultUsers: User[] = [
-      {
-        id: 'superadmin-1',
-        email: 'superadmin@bookpage.com',
-        role: 'superadmin',
-        name: 'Super Admin',
-        createdAt: new Date().toISOString(),
-      }
-    ];
-    localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(defaultUsers));
+  // Demo data disabled for production
+  // To enable demo data, set VITE_ENABLE_DEMO=true in .env.local
+  if (import.meta.env.VITE_ENABLE_DEMO === 'true') {
+    if (!localStorage.getItem(STORAGE_KEYS.PROPERTIES)) {
+      localStorage.setItem(STORAGE_KEYS.PROPERTIES, JSON.stringify(DEMO_PROPERTIES));
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.CALENDARS)) {
+      const defaultCalendar: Record<string, BookingCalendar> = {};
+      DEMO_PROPERTIES.forEach(prop => {
+        defaultCalendar[prop.id] = { propertyId: prop.id, dates: {} };
+      });
+      localStorage.setItem(STORAGE_KEYS.CALENDARS, JSON.stringify(defaultCalendar));
+    }
+    if (!localStorage.getItem(STORAGE_KEYS.USERS)) {
+      const defaultUsers: User[] = [
+        {
+          id: 'superadmin-1',
+          email: 'superadmin@bookpage.com',
+          role: 'superadmin',
+          name: 'Super Admin',
+          createdAt: new Date().toISOString(),
+        }
+      ];
+      localStorage.setItem(STORAGE_KEYS.USERS, JSON.stringify(defaultUsers));
+    }
   }
 }
 
@@ -169,9 +172,12 @@ export function logoutUser(): void {
   localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
 }
 
-// Retained for backward compat in UI mock
-export function checkAdminPassword(password: string): boolean {
-  return password === 'admin123';
+// Password check removed for security - use Supabase auth instead
+export function checkAdminPassword(_password: string): boolean {
+  // WARNING: This is a mock function. In production, authentication
+  // should be handled by Supabase Auth only.
+  console.warn('checkAdminPassword is deprecated. Use Supabase Auth instead.');
+  return false;
 }
 
 export function isAdminAuthenticated(): boolean {

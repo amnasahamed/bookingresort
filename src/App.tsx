@@ -6,6 +6,8 @@ import AdminDashboard from '@/pages/AdminDashboard';
 import PropertyPage from '@/pages/PropertyPage';
 import SuperadminLogin from '@/pages/SuperadminLogin';
 import SuperadminDashboard from '@/pages/SuperadminDashboard';
+import NotFound from '@/pages/NotFound';
+import ErrorBoundary from '@/components/ErrorBoundary';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import './App.css';
 
@@ -29,31 +31,34 @@ function App() {
   }, []);
 
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route
-            path="/admin"
-            element={
-              <ProtectedAdminRoute>
-                <AdminDashboard />
-              </ProtectedAdminRoute>
-            }
-          />
-          <Route
-            path="/superadmin"
-            element={
-              <ProtectedSuperadminRoute>
-                <SuperadminDashboard />
-              </ProtectedSuperadminRoute>
-            }
-          />
-          <Route path="/superadmin/login" element={<SuperadminLogin />} />
-          <Route path="/p/:slug" element={<PropertyPage />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedAdminRoute>
+                  <AdminDashboard />
+                </ProtectedAdminRoute>
+              }
+            />
+            <Route
+              path="/superadmin"
+              element={
+                <ProtectedSuperadminRoute>
+                  <SuperadminDashboard />
+                </ProtectedSuperadminRoute>
+              }
+            />
+            <Route path="/superadmin/login" element={<SuperadminLogin />} />
+            <Route path="/p/:slug" element={<PropertyPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
