@@ -72,8 +72,6 @@ export default function AdminDashboard() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [calendarData, setCalendarData] = useState<Record<number, DateStatus>>({});
   const [activeTab, setActiveTab] = useState('calendar');
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   // Form states
   const [propertyName, setPropertyName] = useState('');
@@ -111,8 +109,6 @@ export default function AdminDashboard() {
 
   const loadProperties = async () => {
     try {
-      setIsLoading(true);
-      setError(null);
       const props = await getProperties();
       // Filter properties for the current admin (unless superadmin)
       const filteredProps = user?.role === 'superadmin' 
@@ -122,11 +118,8 @@ export default function AdminDashboard() {
       if (filteredProps.length > 0 && !selectedPropertyId) {
         setSelectedPropertyId(filteredProps[0].id);
       }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load properties';
-      setError(message);
-    } finally {
-      setIsLoading(false);
+    } catch {
+      // Silent fail - properties will remain empty
     }
   };
 
