@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AMENITIES_LIST } from './AdminDashboard';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { getPropertyBySlug, getMonthCalendar } from '@/lib/api';
 import type { Property, DateStatus } from '@/types';
@@ -636,6 +636,9 @@ export default function PropertyPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Confirm Your Booking Request</DialogTitle>
+            <DialogDescription className="sr-only">
+              Review your booking details before sending the inquiry via WhatsApp.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="bg-gray-50 rounded-lg p-4">

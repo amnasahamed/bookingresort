@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { supabase } from '@/lib/supabase';
 
 export default function LandingPage() {
@@ -582,6 +582,9 @@ export default function LandingPage() {
               <Lock className="w-5 h-5" />
               Admin Login
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Sign in with your admin email and password to access the dashboard.
+            </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleAdminLogin} className="space-y-4">
             <div>
