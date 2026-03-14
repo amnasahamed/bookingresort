@@ -32,37 +32,52 @@ export default function SuperadminLogin() {
                 return;
             }
 
+            console.log('Login successful, user:', data.session.user.id, data.session.user.email);
+
             // Step 2: Wait for auth token lock to fully release
             await new Promise(resolve => setTimeout(resolve, 500));
 
             // Step 3: Verify they are a superadmin
             const user = data.session.user;
+            console.log('Fetching profile for user:', user.id);
+            
             let profile = null;
             let profileError = null;
             
             try {
                 const result = await supabase
                     .from('profiles')
-                    .select('role')
+                    .select('role, full_name, email')
                     .eq('id', user.id)
-                    .single();
+                    .maybeSingle();  // Use maybeSingle instead of single to avoid 406 error
                 profile = result.data;
                 profileError = result.error;
+                console.log('Profile result:', { profile, profileError });
             } catch (e: any) {
                 profileError = e;
+                console.error('Profile fetch exception:', e);
             }
 
             if (profileError) {
                 console.error('Profile fetch error:', profileError);
                 await supabase.auth.signOut();
-                setError('Error loading user profile. Please contact support.');
+                setError(`Error loading user profile: ${profileError.message || 'Unknown error'}. Please contact support.`);
+                return;
+            }
+
+            if (!profile) {
+                console.error('No profile found for user:', user.id);
+                await supabase.auth.signOut();
+                setError('No profile found for this user. Please contact support to set up your account.');
                 return;
             }
 
             if (profile?.role === 'superadmin') {
+                console.log('Superadmin verified, navigating...');
                 navigate('/superadmin');
             } else {
                 // If not superadmin, log them out and show error
+                console.log('Not superadmin, role:', profile?.role);
                 await supabase.auth.signOut();
                 setError(`Access denied: Your account role is "${profile?.role || 'unknown'}". Superadmin privileges required.`);
             }
