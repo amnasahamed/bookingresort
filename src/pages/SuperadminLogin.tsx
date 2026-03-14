@@ -59,6 +59,9 @@ export default function SuperadminLogin() {
                 timestamp: Date.now()
             }));
 
+            // Dispatch custom event to notify AuthContext
+            window.dispatchEvent(new Event('auth-changed'));
+
             // Success - Navigate to dashboard
             console.log('[v0] Superadmin login successful:', users.full_name);
             navigate('/superadmin');

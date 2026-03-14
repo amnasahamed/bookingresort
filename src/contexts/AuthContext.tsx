@@ -72,25 +72,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             isProcessingRef.current = true;
 
             try {
-                await new Promise(resolve => setTimeout(resolve, 300));
+                await new Promise(resolve => setTimeout(resolve, 100));
                 const u = getCurrentUserLocal();
                 if (mounted) {
                     setUser(u);
+                    setLoading(false);
                 }
             } catch (e) {
                 console.error('[v0] Auth init failed', e);
+                if (mounted) setLoading(false);
             } finally {
-                if (mounted) {
-                    setLoading(false);
-                }
                 isProcessingRef.current = false;
             }
         }
 
         initializeAuth();
 
+        // Listen for custom auth change events
+        const handleAuthChange = () => {
+            if (mounted) {
+                console.log('[v0] Auth changed, refreshing user');
+                const u = getCurrentUserLocal();
+                setUser(u);
+            }
+        };
+
+        window.addEventListener('auth-changed', handleAuthChange);
+
         return () => {
             mounted = false;
+            window.removeEventListener('auth-changed', handleAuthChange);
         };
     }, [getCurrentUserLocal]);
 

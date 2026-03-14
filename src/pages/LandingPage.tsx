@@ -88,6 +88,9 @@ export default function LandingPage() {
         timestamp: Date.now()
       }));
 
+      // Dispatch custom event to notify AuthContext
+      window.dispatchEvent(new Event('auth-changed'));
+
       // Success - Navigate to dashboard
       console.log('[v0] Admin login successful:', users.full_name);
       setShowAdminLogin(false);
