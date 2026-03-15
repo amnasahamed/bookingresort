@@ -34,8 +34,8 @@ export default function SuperadminDashboard() {
             const [u, p] = await Promise.all([getUsers(), getProperties()]);
             setUsers(u);
             setProperties(p);
-        } catch (error) {
-            console.error("Failed to load data", error);
+        } catch {
+            // Silent fail - data will remain empty
         }
     };
 
@@ -58,9 +58,9 @@ export default function SuperadminDashboard() {
             setTimeout(() => {
                 loadData();
             }, 1500);
-        } catch (err: any) {
+        } catch (err) {
             setInviteStatus('error');
-            setInviteError(err.message);
+            setInviteError(err instanceof Error ? err.message : 'Failed to send invite');
         }
     };
 
@@ -287,7 +287,7 @@ export default function SuperadminDashboard() {
                             Invite a Property Admin
                         </DialogTitle>
                         <DialogDescription>
-                            They'll receive an email to set their password and start managing their property.
+                            Create a new admin account. They can log in with the default password and change it later.
                         </DialogDescription>
                     </DialogHeader>
 
@@ -296,8 +296,8 @@ export default function SuperadminDashboard() {
                             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <CheckCircle className="w-8 h-8 text-emerald-600" />
                             </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Invite Sent!</h3>
-                            <p className="text-gray-500 text-sm">They'll receive an email shortly with a link to set up their account.</p>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Admin Created!</h3>
+                            <p className="text-gray-500 text-sm">Account created successfully. Default password is <code className="bg-gray-100 px-2 py-0.5 rounded">admin123</code></p>
                             <Button className="mt-6 w-full" onClick={handleCloseInvite}>Done</Button>
                         </div>
                     ) : (

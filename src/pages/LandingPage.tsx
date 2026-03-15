@@ -25,6 +25,7 @@ export default function LandingPage() {
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -44,60 +45,53 @@ export default function LandingPage() {
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    setLoginLoading(true);
 
     try {
-      // WORKAROUND: Direct database authentication
-      // Since Supabase Auth endpoint is returning 500 errors,
-      // we verify credentials directly against the database
-      
-      console.log('[v0] Attempting direct database authentication');
-      
       // Query the user with their email
-      const { data: users, error: userError } = await supabase
+      const { data: userData, error: userError } = await supabase
         .from('profiles')
         .select('id, email, full_name, role')
-        .eq('email', adminEmail.toLowerCase())
+        .eq('email', adminEmail)
         .maybeSingle();
 
-      if (userError || !users) {
-        console.error('[v0] User lookup failed:', userError);
+      if (userError || !userData) {
         setLoginError('Invalid email or password.');
+        setLoginLoading(false);
         return;
       }
 
-      if (users.role !== 'admin' && users.role !== 'superadmin') {
+      if (userData.role !== 'admin' && userData.role !== 'superadmin') {
         setLoginError('Access denied. Admin privileges required.');
+        setLoginLoading(false);
         return;
       }
 
-      // For now, accept the hardcoded password: admin123
-      // In production, implement proper bcrypt verification
+      // Verify password (hardcoded for now - in production use proper auth)
       if (adminPassword !== 'admin123') {
         setLoginError('Invalid email or password.');
+        setLoginLoading(false);
         return;
       }
 
-      console.log('[v0] Direct auth successful for:', users.email);
-
-      // Create a mock session and store user info locally
+      // Create session and store user info locally
       localStorage.setItem('auth_user', JSON.stringify({
-        id: users.id,
-        email: users.email,
-        role: users.role,
-        full_name: users.full_name,
+        id: userData.id,
+        email: userData.email,
+        role: userData.role,
+        full_name: userData.full_name,
         timestamp: Date.now()
       }));
 
       // Dispatch custom event to notify AuthContext
       window.dispatchEvent(new Event('auth-changed'));
 
-      // Success - Navigate to dashboard
-      console.log('[v0] Admin login successful:', users.full_name);
+      // Navigate to dashboard
       setShowAdminLogin(false);
       navigate('/admin');
-    } catch (err: any) {
-      console.error('[v0] Login error:', err);
-      setLoginError(err.message || 'An unexpected error occurred. Please try again.');
+    } catch {
+      setLoginError('An unexpected error occurred. Please try again.');
+      setLoginLoading(false);
     }
   };
 
@@ -662,9 +656,14 @@ export default function LandingPage() {
               <Button
                 type="submit"
                 className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white"
+                disabled={loginLoading}
               >
-                <Lock className="w-4 h-4 mr-2" />
-                Login
+                {loginLoading ? 'Logging in...' : (
+                  <>
+                    <Lock className="w-4 h-4 mr-2" />
+                    Login
+                  </>
+                )}
               </Button>
             </div>
           </form>

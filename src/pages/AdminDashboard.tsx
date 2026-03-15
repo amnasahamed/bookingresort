@@ -110,12 +110,16 @@ export default function AdminDashboard() {
   const loadProperties = async () => {
     try {
       const props = await getProperties();
-      setProperties(props);
-      if (props.length > 0 && !selectedPropertyId) {
-        setSelectedPropertyId(props[0].id);
+      // Filter properties for the current admin (unless superadmin)
+      const filteredProps = user?.role === 'superadmin' 
+        ? props 
+        : props.filter(p => p.adminId === user?.id);
+      setProperties(filteredProps);
+      if (filteredProps.length > 0 && !selectedPropertyId) {
+        setSelectedPropertyId(filteredProps[0].id);
       }
-    } catch (error) {
-      console.error('Error loading properties:', error);
+    } catch {
+      // Silent fail - properties will remain empty
     }
   };
 
@@ -128,8 +132,8 @@ export default function AdminDashboard() {
         currentMonth.getMonth()
       );
       setCalendarData(data);
-    } catch (error) {
-      console.error('Error loading calendar:', error);
+    } catch {
+      // Silent fail - calendar will show all dates as open
     }
   };
 
@@ -169,8 +173,7 @@ export default function AdminDashboard() {
       resetForm();
       await loadProperties();
       setSelectedPropertyId(created.id);
-    } catch (error) {
-      console.error('Error creating property:', error);
+    } catch {
       alert('Failed to create property. Please try again.');
     }
   };
@@ -201,8 +204,7 @@ export default function AdminDashboard() {
       await saveProperty(updatedProperty, user.id);
       setShowEditProperty(false);
       await loadProperties();
-    } catch (error) {
-      console.error('Error updating property:', error);
+    } catch {
       alert('Failed to update property. Please try again.');
     }
   };
@@ -216,8 +218,7 @@ export default function AdminDashboard() {
         if (selectedPropertyId === id) {
           setSelectedPropertyId(remaining.length > 0 ? remaining[0].id : null);
         }
-      } catch (error) {
-        console.error('Error deleting property:', error);
+      } catch {
         alert('Failed to delete property.');
       }
     }
@@ -271,9 +272,9 @@ export default function AdminDashboard() {
           const url = await uploadMedia(file);
           newVideos.push(url);
         }
-      } catch (error) {
-        console.error('Error uploading media:', error);
-      }
+        } catch {
+          // Skip failed uploads silently
+        }
     }
 
     setPropertyImages([...propertyImages, ...newImages]);
@@ -299,10 +300,10 @@ export default function AdminDashboard() {
   const toggleDateStatus = (day: number) => {
     if (!selectedPropertyId) return;
     const dateStr = format(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day), 'yyyy-MM-dd');
-    const currentStatus = calendarData[day] || 'open';
+    const currentStatus = calendarData[day] || 'available';
     const newStatus: DateStatus =
-      currentStatus === 'open' ? 'booked' :
-        currentStatus === 'booked' ? 'hold' : 'open';
+      currentStatus === 'available' ? 'booked' :
+        currentStatus === 'booked' ? 'blocked' : 'available';
 
     setDateStatus(selectedPropertyId, dateStr, newStatus);
     setCalendarData({ ...calendarData, [day]: newStatus });
@@ -310,8 +311,8 @@ export default function AdminDashboard() {
 
   const getStatusColor = (status: DateStatus) => {
     switch (status) {
-      case 'open': return 'bg-emerald-500 hover:bg-emerald-600';
-      case 'hold': return 'bg-yellow-500 hover:bg-yellow-600';
+      case 'available': return 'bg-emerald-500 hover:bg-emerald-600';
+      case 'blocked': return 'bg-yellow-500 hover:bg-yellow-600';
       case 'booked': return 'bg-red-500 hover:bg-red-600';
     }
   };
@@ -561,7 +562,7 @@ export default function AdminDashboard() {
                         ))}
                         {daysInMonth.map((day) => {
                           const dayNum = day.getDate();
-                          const status = calendarData[dayNum] || 'open';
+                          const status = calendarData[dayNum] || 'available';
                           return (
                             <button
                               key={dayNum}
@@ -570,7 +571,7 @@ export default function AdminDashboard() {
                             >
                               <span className="text-lg font-semibold">{dayNum}</span>
                               <span className="text-xs opacity-80">
-                                {status === 'open' ? 'Open' : status === 'hold' ? 'Hold' : 'Booked'}
+                                {status === 'available' ? 'Open' : status === 'blocked' ? 'Blocked' : 'Booked'}
                               </span>
                             </button>
                           );

@@ -38,8 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 name: userData.full_name || userData.name,
                 createdAt: userData.createdAt || new Date().toISOString()
             };
-        } catch (e) {
-            console.error('[v0] Failed to parse auth_user:', e);
+        } catch {
             return null;
         }
     }, []);
@@ -51,8 +50,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         try {
             const u = getCurrentUserLocal();
             setUser(u);
-        } catch (e) {
-            console.error('[v0] Refresh user failed', e);
+        } catch {
             setUser(null);
         } finally {
             isProcessingRef.current = false;
@@ -62,7 +60,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const logout = useCallback(() => {
         localStorage.removeItem('auth_user');
         setUser(null);
-        console.log('[v0] User logged out');
     }, []);
 
     useEffect(() => {
@@ -79,8 +76,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                     setUser(u);
                     setLoading(false);
                 }
-            } catch (e) {
-                console.error('[v0] Auth init failed', e);
+            } catch {
                 if (mounted) setLoading(false);
             } finally {
                 isProcessingRef.current = false;
@@ -92,7 +88,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Listen for custom auth change events
         const handleAuthChange = () => {
             if (mounted) {
-                console.log('[v0] Auth changed, refreshing user');
                 const u = getCurrentUserLocal();
                 setUser(u);
             }

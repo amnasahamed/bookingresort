@@ -1,6 +1,6 @@
 // BookPage Types
 
-export type DateStatus = 'open' | 'hold' | 'booked';
+export type DateStatus = 'available' | 'blocked' | 'booked';
 
 export interface Property {
   id: string;

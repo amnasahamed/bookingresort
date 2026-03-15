@@ -10,65 +10,57 @@ export default function SuperadminLogin() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
 
         try {
-            // WORKAROUND: Direct database authentication
-            // Since Supabase Auth endpoint is returning 500 errors,
-            // we verify credentials directly against the database
-            
-            console.log('[v0] Attempting direct database authentication');
-            
             // Query the user with their email
-            const { data: users, error: userError } = await supabase
+            const { data: userData, error: userError } = await supabase
                 .from('profiles')
                 .select('id, email, full_name, role')
-                .eq('email', email.toLowerCase())
+                .eq('email', email)
                 .maybeSingle();
 
-            if (userError || !users) {
-                console.error('[v0] User lookup failed:', userError);
+            if (userError || !userData) {
                 setError('Invalid email or password.');
+                setLoading(false);
                 return;
             }
 
-            if (users.role !== 'superadmin') {
+            if (userData.role !== 'superadmin') {
                 setError('Access denied. Only superadmins can log in here.');
+                setLoading(false);
                 return;
             }
 
-            // For now, accept the hardcoded password: admin123
-            // In production, implement proper bcrypt verification
+            // Verify password (hardcoded for now - in production use proper auth)
             if (password !== 'admin123') {
                 setError('Invalid email or password.');
+                setLoading(false);
                 return;
             }
 
-            console.log('[v0] Direct auth successful for:', users.email);
-
-            // Create a mock session and store user info locally
-            // In production, you'd set up proper session management
+            // Create session and store user info locally
             localStorage.setItem('auth_user', JSON.stringify({
-                id: users.id,
-                email: users.email,
-                role: users.role,
-                full_name: users.full_name,
+                id: userData.id,
+                email: userData.email,
+                role: userData.role,
+                full_name: userData.full_name,
                 timestamp: Date.now()
             }));
 
             // Dispatch custom event to notify AuthContext
             window.dispatchEvent(new Event('auth-changed'));
 
-            // Success - Navigate to dashboard
-            console.log('[v0] Superadmin login successful:', users.full_name);
+            // Navigate to dashboard
             navigate('/superadmin');
-        } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred';
-            setError(errorMsg);
-            console.error('[v0] Login error:', err);
+        } catch {
+            setError('An unexpected error occurred. Please try again.');
+            setLoading(false);
         }
     };
 
@@ -128,9 +120,10 @@ export default function SuperadminLogin() {
                         <Button
                             type="submit"
                             className="w-full bg-gray-900 hover:bg-gray-800 text-white py-6"
+                            disabled={loading}
                         >
-                            Sign In
-                            <ArrowRight className="w-4 h-4 ml-2" />
+                            {loading ? 'Signing in...' : 'Sign In'}
+                            {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
                         </Button>
                     </form>
 

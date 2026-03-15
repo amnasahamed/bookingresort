@@ -116,7 +116,7 @@ export function setDateStatus(propertyId: string, date: string, status: DateStat
 
 export function getDateStatus(propertyId: string, date: string): DateStatus {
   const calendar = getCalendar(propertyId);
-  return calendar.dates[date] || 'open';
+  return calendar.dates[date] || 'available';
 }
 
 export function getMonthCalendar(propertyId: string, year: number, month: number): Record<number, DateStatus> {
@@ -126,7 +126,7 @@ export function getMonthCalendar(propertyId: string, year: number, month: number
 
   for (let day = 1; day <= daysInMonth; day++) {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    result[day] = calendar.dates[dateStr] || 'open';
+    result[day] = calendar.dates[dateStr] || 'available';
   }
 
   return result;
@@ -174,9 +174,7 @@ export function logoutUser(): void {
 
 // Password check removed for security - use Supabase auth instead
 export function checkAdminPassword(_password: string): boolean {
-  // WARNING: This is a mock function. In production, authentication
-  // should be handled by Supabase Auth only.
-  console.warn('checkAdminPassword is deprecated. Use Supabase Auth instead.');
+  // Deprecated: authentication is handled by Supabase
   return false;
 }
 

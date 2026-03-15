@@ -22,8 +22,7 @@ export async function getCurrentUser() {
             name: userData.full_name || userData.name,
             createdAt: userData.createdAt || new Date().toISOString()
         };
-    } catch (e) {
-        console.error('[v0] getCurrentUser error:', e);
+    } catch {
         return null;
     }
 }
@@ -35,62 +34,75 @@ export async function getUsers() {
 }
 
 export async function signOut() {
-    // Clear localStorage session
     localStorage.removeItem('auth_user');
-    console.log('[v0] User signed out');
+    window.dispatchEvent(new Event('auth-changed'));
+}
+
+export async function verifyPassword(email: string, password: string) {
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-password`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        throw new Error(data.error || 'Invalid credentials');
+    }
+
+    return data.user;
 }
 
 export async function inviteAdmin(email: string, name: string, role: 'admin' | 'superadmin' = 'admin') {
-    // Prevent indefinite hanging from Supabase session locks
-    const sessionPromise = supabase.auth.getSession();
-    const timeoutPromise = new Promise<{ data: { session: any }, error: any }>((_, reject) => {
-        setTimeout(() => reject(new Error('Session fetch timed out. Please refresh the page.')), 5000);
-    });
-
-    const { data: { session }, error: sessionError } = await Promise.race([sessionPromise, timeoutPromise]);
-
-    if (sessionError || !session) {
-        throw new Error('Not authenticated properly or session expired. Please refresh the page and try again.');
+    // Check if user is logged in via localStorage
+    const stored = localStorage.getItem('auth_user');
+    if (!stored) {
+        throw new Error('You must be logged in to invite admins.');
     }
 
-    const controller = new AbortController();
-    const fetchTimeoutId = setTimeout(() => controller.abort(), 10000);
-
-    let res;
-    try {
-        res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-admin`, {
-            method: 'POST',
-            signal: controller.signal,
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${session.access_token}`,
-                'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
-            },
-            body: JSON.stringify({ email, name, role }),
-        });
-    } catch (err: any) {
-        if (err.name === 'AbortError') {
-            throw new Error('Supabase request timed out after 10 seconds. Check logs or retry.');
-        }
-        throw err;
-    } finally {
-        clearTimeout(fetchTimeoutId);
+    const currentUser = JSON.parse(stored);
+    if (currentUser.role !== 'superadmin') {
+        throw new Error('Only superadmins can invite new admins.');
     }
 
-    let data;
-    const contentType = res.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-        data = await res.json();
-    } else {
-        const text = await res.text();
-        throw new Error(`Server returned non-JSON response (${res.status}): ${text.substring(0, 100)}...`);
+    // Check if email already exists
+    const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', email.toLowerCase())
+        .maybeSingle();
+
+    if (existingUser) {
+        throw new Error('A user with this email already exists.');
     }
 
-    if (!res.ok) {
-        console.error('Invite admin error:', data);
-        throw new Error(data.error || 'Failed to send invite');
+    // Create the new admin profile directly
+    // Note: In production, you would send an email invitation instead
+    const { data, error } = await supabase
+        .from('profiles')
+        .insert({
+            email: email.toLowerCase(),
+            full_name: name,
+            role: role,
+            // Password hash for 'admin123' - user should change this
+            password_hash: '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'
+        })
+        .select()
+        .single();
+
+    if (error) {
+        throw new Error(error.message || 'Failed to create admin account.');
     }
-    return data;
+
+    return { 
+        success: true, 
+        message: `Admin account created for ${email}. Default password is 'admin123'.`,
+        user: data 
+    };
 }
 
 // Properties

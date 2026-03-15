@@ -34,10 +34,8 @@ Deno.serve(async (req: Request) => {
         const { data: { user: caller }, error: authError } = await supabaseAdmin.auth.getUser(token);
 
         if (authError || !caller) {
-            console.error('Auth verification failed:', authError?.message || 'No user found for token');
             return new Response(JSON.stringify({
-                error: 'Unauthorized: Invalid JWT or Session Expired',
-                details: authError?.message
+                error: 'Unauthorized: Invalid JWT or Session Expired'
             }), {
                 status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
@@ -51,11 +49,8 @@ Deno.serve(async (req: Request) => {
             .single();
 
         if (profileError || callerProfile?.role !== 'superadmin') {
-            const msg = profileError ? profileError.message : 'User is not a superadmin';
-            console.error('Superadmin check failed:', msg);
             return new Response(JSON.stringify({
-                error: 'Forbidden: Superadmin privileges required',
-                details: msg
+                error: 'Forbidden: Superadmin privileges required'
             }), {
                 status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
@@ -76,30 +71,27 @@ Deno.serve(async (req: Request) => {
         });
 
         if (inviteError) {
-            console.error('Invitation error:', inviteError.message);
             return new Response(JSON.stringify({ error: inviteError.message }), {
                 status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
 
         if (!invited?.user) {
-            console.error('Invitation succeeded but no user returned');
             return new Response(JSON.stringify({ error: 'Failed to create user' }), {
                 status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
 
         // Create or update the profile row immediately
-        const { error: profileError } = await supabaseAdmin.from('profiles').upsert({
+        const { error: profileUpsertError } = await supabaseAdmin.from('profiles').upsert({
             id: invited.user.id,
             email,
             full_name: name,
             role,
         });
 
-        if (profileError) {
-            console.error('Profile upsert error:', profileError.message);
-            return new Response(JSON.stringify({ error: `User invited but profile creation failed: ${profileError.message}` }), {
+        if (profileUpsertError) {
+            return new Response(JSON.stringify({ error: 'User invited but profile creation failed' }), {
                 status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
             });
         }
@@ -108,9 +100,9 @@ Deno.serve(async (req: Request) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
 
-    } catch (err: any) {
-        console.error('Unexpected error in function:', err.message);
-        return new Response(JSON.stringify({ error: err.message }), {
+    } catch (err) {
+        const message = err instanceof Error ? err.message : 'An unexpected error occurred';
+        return new Response(JSON.stringify({ error: message }), {
             status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }
