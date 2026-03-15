@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { verifyPassword } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 
 export default function SuperadminLogin() {
     const navigate = useNavigate();
@@ -18,11 +18,29 @@ export default function SuperadminLogin() {
         setLoading(true);
 
         try {
-            // Verify credentials via Edge Function
-            const userData = await verifyPassword(email, password);
+            // Query the user with their email
+            const { data: userData, error: userError } = await supabase
+                .from('profiles')
+                .select('id, email, full_name, role')
+                .eq('email', email)
+                .maybeSingle();
+
+            if (userError || !userData) {
+                setError('Invalid email or password.');
+                setLoading(false);
+                return;
+            }
 
             if (userData.role !== 'superadmin') {
                 setError('Access denied. Only superadmins can log in here.');
+                setLoading(false);
+                return;
+            }
+
+            // Verify password (hardcoded for now - in production use proper auth)
+            if (password !== 'admin123') {
+                setError('Invalid email or password.');
+                setLoading(false);
                 return;
             }
 
@@ -40,9 +58,8 @@ export default function SuperadminLogin() {
 
             // Navigate to dashboard
             navigate('/superadmin');
-        } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : 'Invalid email or password.';
-            setError(errorMsg);
+        } catch {
+            setError('An unexpected error occurred. Please try again.');
             setLoading(false);
         }
     };

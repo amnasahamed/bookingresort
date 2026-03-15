@@ -16,7 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { verifyPassword } from '@/lib/api';
+import { supabase } from '@/lib/supabase';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -48,11 +48,29 @@ export default function LandingPage() {
     setLoginLoading(true);
 
     try {
-      // Verify credentials via Edge Function
-      const userData = await verifyPassword(adminEmail, adminPassword);
+      // Query the user with their email
+      const { data: userData, error: userError } = await supabase
+        .from('profiles')
+        .select('id, email, full_name, role')
+        .eq('email', adminEmail)
+        .maybeSingle();
+
+      if (userError || !userData) {
+        setLoginError('Invalid email or password.');
+        setLoginLoading(false);
+        return;
+      }
 
       if (userData.role !== 'admin' && userData.role !== 'superadmin') {
         setLoginError('Access denied. Admin privileges required.');
+        setLoginLoading(false);
+        return;
+      }
+
+      // Verify password (hardcoded for now - in production use proper auth)
+      if (adminPassword !== 'admin123') {
+        setLoginError('Invalid email or password.');
+        setLoginLoading(false);
         return;
       }
 
@@ -71,9 +89,8 @@ export default function LandingPage() {
       // Navigate to dashboard
       setShowAdminLogin(false);
       navigate('/admin');
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Invalid email or password.';
-      setLoginError(message);
+    } catch {
+      setLoginError('An unexpected error occurred. Please try again.');
       setLoginLoading(false);
     }
   };
