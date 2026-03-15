@@ -52,13 +52,14 @@ Deno.serve(async (req) => {
         }
 
         // Verify password
-        let isValid = false;
-        if (profile.password_hash) {
-            isValid = await bcrypt.compare(password, profile.password_hash);
-        } else {
-            // Fallback for accounts without hash set (legacy)
-            isValid = password === 'admin123';
+        if (!profile.password_hash) {
+            return new Response(JSON.stringify({ error: 'Account not properly configured. Please contact support.' }), {
+                status: 401,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
         }
+
+        const isValid = await bcrypt.compare(password, profile.password_hash);
 
         if (!isValid) {
             return new Response(JSON.stringify({ error: 'Invalid email or password' }), {
@@ -81,8 +82,7 @@ Deno.serve(async (req) => {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
 
-    } catch (error) {
-        console.error('Verify password error:', error);
+    } catch {
         return new Response(JSON.stringify({ error: 'Internal server error' }), {
             status: 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },

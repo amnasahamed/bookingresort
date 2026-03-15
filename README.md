@@ -73,13 +73,15 @@ vercel
 
 Make sure to configure the environment variables in your Vercel project settings.
 
-## Default Admin Credentials
+## Initial Admin Setup
 
-For initial setup:
-- Email: `admin@bookpage.com`
-- Password: `admin123`
+The default superadmin account is created via the database migration scripts. After deployment:
 
-**Important**: Change these credentials immediately after first login.
+1. Run the migration scripts to create the initial admin user
+2. Login with the credentials set in your migration
+3. Use the Superadmin Portal to invite additional admins
+
+**Security Note**: The password is hashed using bcrypt in the database. Ensure you change the default password in the migration script before deploying to production.
 
 ## License
 

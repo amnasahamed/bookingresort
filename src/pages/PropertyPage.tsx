@@ -191,8 +191,8 @@ export default function PropertyPage() {
           text: `Check out ${property.name} on BookPage!`,
           url: url,
         });
-      } catch (err) {
-        // User cancelled
+      } catch {
+        // User cancelled or share failed
       }
     } else {
       navigator.clipboard.writeText(url);

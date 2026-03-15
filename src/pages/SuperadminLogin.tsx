@@ -3,45 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/lib/supabase';
+import { verifyPassword } from '@/lib/api';
 
 export default function SuperadminLogin() {
     const navigate = useNavigate();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
+        setLoading(true);
 
         try {
-            // Query the user with their email
-            const { data: userData, error: userError } = await supabase
-                .from('profiles')
-                .select('id, email, full_name, role')
-                .eq('email', email)
-                .maybeSingle();
-
-            if (userError) {
-                console.error('Query error:', userError);
-                setError('Database error. Please try again.');
-                return;
-            }
-            
-            if (!userData) {
-                setError('Invalid email or password.');
-                return;
-            }
+            // Verify credentials via Edge Function
+            const userData = await verifyPassword(email, password);
 
             if (userData.role !== 'superadmin') {
                 setError('Access denied. Only superadmins can log in here.');
-                return;
-            }
-
-            // Verify password
-            if (password !== 'admin123') {
-                setError('Invalid email or password.');
                 return;
             }
 
@@ -60,8 +41,9 @@ export default function SuperadminLogin() {
             // Navigate to dashboard
             navigate('/superadmin');
         } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : 'An unexpected error occurred';
+            const errorMsg = err instanceof Error ? err.message : 'Invalid email or password.';
             setError(errorMsg);
+            setLoading(false);
         }
     };
 
@@ -121,9 +103,10 @@ export default function SuperadminLogin() {
                         <Button
                             type="submit"
                             className="w-full bg-gray-900 hover:bg-gray-800 text-white py-6"
+                            disabled={loading}
                         >
-                            Sign In
-                            <ArrowRight className="w-4 h-4 ml-2" />
+                            {loading ? 'Signing in...' : 'Sign In'}
+                            {!loading && <ArrowRight className="w-4 h-4 ml-2" />}
                         </Button>
                     </form>
 

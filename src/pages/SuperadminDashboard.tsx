@@ -58,9 +58,9 @@ export default function SuperadminDashboard() {
             setTimeout(() => {
                 loadData();
             }, 1500);
-        } catch (err: any) {
+        } catch (err) {
             setInviteStatus('error');
-            setInviteError(err.message);
+            setInviteError(err instanceof Error ? err.message : 'Failed to send invite');
         }
     };
 

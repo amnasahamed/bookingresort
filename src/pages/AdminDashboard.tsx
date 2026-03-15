@@ -173,8 +173,7 @@ export default function AdminDashboard() {
       resetForm();
       await loadProperties();
       setSelectedPropertyId(created.id);
-    } catch (error) {
-      console.error('Error creating property:', error);
+    } catch {
       alert('Failed to create property. Please try again.');
     }
   };
@@ -205,8 +204,7 @@ export default function AdminDashboard() {
       await saveProperty(updatedProperty, user.id);
       setShowEditProperty(false);
       await loadProperties();
-    } catch (error) {
-      console.error('Error updating property:', error);
+    } catch {
       alert('Failed to update property. Please try again.');
     }
   };
@@ -220,8 +218,7 @@ export default function AdminDashboard() {
         if (selectedPropertyId === id) {
           setSelectedPropertyId(remaining.length > 0 ? remaining[0].id : null);
         }
-      } catch (error) {
-        console.error('Error deleting property:', error);
+      } catch {
         alert('Failed to delete property.');
       }
     }
@@ -275,9 +272,9 @@ export default function AdminDashboard() {
           const url = await uploadMedia(file);
           newVideos.push(url);
         }
-      } catch (error) {
-        console.error('Error uploading media:', error);
-      }
+        } catch {
+          // Skip failed uploads silently
+        }
     }
 
     setPropertyImages([...propertyImages, ...newImages]);

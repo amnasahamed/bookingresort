@@ -16,7 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { supabase } from '@/lib/supabase';
+import { verifyPassword } from '@/lib/api';
 
 export default function LandingPage() {
   const navigate = useNavigate();
@@ -25,6 +25,7 @@ export default function LandingPage() {
   const [adminEmail, setAdminEmail] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [loginLoading, setLoginLoading] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
@@ -44,34 +45,14 @@ export default function LandingPage() {
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
+    setLoginLoading(true);
 
     try {
-      // Query the user with their email
-      const { data: userData, error: userError } = await supabase
-        .from('profiles')
-        .select('id, email, full_name, role')
-        .eq('email', adminEmail)
-        .maybeSingle();
-
-      if (userError) {
-        console.error('Query error:', userError);
-        setLoginError('Database error. Please try again.');
-        return;
-      }
-      
-      if (!userData) {
-        setLoginError('Invalid email or password.');
-        return;
-      }
+      // Verify credentials via Edge Function
+      const userData = await verifyPassword(adminEmail, adminPassword);
 
       if (userData.role !== 'admin' && userData.role !== 'superadmin') {
         setLoginError('Access denied. Admin privileges required.');
-        return;
-      }
-
-      // Verify password
-      if (adminPassword !== 'admin123') {
-        setLoginError('Invalid email or password.');
         return;
       }
 
@@ -91,8 +72,9 @@ export default function LandingPage() {
       setShowAdminLogin(false);
       navigate('/admin');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      const message = err instanceof Error ? err.message : 'Invalid email or password.';
       setLoginError(message);
+      setLoginLoading(false);
     }
   };
 
@@ -657,9 +639,14 @@ export default function LandingPage() {
               <Button
                 type="submit"
                 className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white"
+                disabled={loginLoading}
               >
-                <Lock className="w-4 h-4 mr-2" />
-                Login
+                {loginLoading ? 'Logging in...' : (
+                  <>
+                    <Lock className="w-4 h-4 mr-2" />
+                    Login
+                  </>
+                )}
               </Button>
             </div>
           </form>

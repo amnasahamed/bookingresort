@@ -174,9 +174,7 @@ export function logoutUser(): void {
 
 // Password check removed for security - use Supabase auth instead
 export function checkAdminPassword(_password: string): boolean {
-  // WARNING: This is a mock function. In production, authentication
-  // should be handled by Supabase Auth only.
-  console.warn('checkAdminPassword is deprecated. Use Supabase Auth instead.');
+  // Deprecated: authentication is handled by Supabase
   return false;
 }
 

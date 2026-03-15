@@ -38,6 +38,25 @@ export async function signOut() {
     window.dispatchEvent(new Event('auth-changed'));
 }
 
+export async function verifyPassword(email: string, password: string) {
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/verify-password`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        throw new Error(data.error || 'Invalid credentials');
+    }
+
+    return data.user;
+}
+
 export async function inviteAdmin(email: string, name: string, role: 'admin' | 'superadmin' = 'admin') {
     // Prevent indefinite hanging from Supabase session locks
     const sessionPromise = supabase.auth.getSession();
@@ -66,9 +85,9 @@ export async function inviteAdmin(email: string, name: string, role: 'admin' | '
             },
             body: JSON.stringify({ email, name, role }),
         });
-    } catch (err: any) {
-        if (err.name === 'AbortError') {
-            throw new Error('Supabase request timed out after 10 seconds. Check logs or retry.');
+    } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+            throw new Error('Request timed out. Please try again.');
         }
         throw err;
     } finally {
@@ -85,7 +104,6 @@ export async function inviteAdmin(email: string, name: string, role: 'admin' | '
     }
 
     if (!res.ok) {
-        console.error('Invite admin error:', data);
         throw new Error(data.error || 'Failed to send invite');
     }
     return data;
